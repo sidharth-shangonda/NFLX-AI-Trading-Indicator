@@ -14,4 +14,5 @@ Checked on 2026-11-03 against the frozen snapshot `b9895df89c65acbf77493fbc8abb4
 | h. HGB early-stopping split | VERIFIED with condition | In sklearn 1.9.1, auto enables a random split above 10,000 samples; set `early_stopping=False`. |
 
 The 5% pause condition uses `candles_below_min_minutes_share`.
-If it exceeds 5%, stop and ask before changing any rule.
+The measured share exceeds 5%; the owner directed that MIN_MINUTES remain 3.
+The candle-t gate and t+1 label rule are recorded in SPEC section 3.

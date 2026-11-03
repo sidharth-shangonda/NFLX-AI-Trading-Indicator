@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, time
 from typing import Any
 
 import numpy as np
@@ -129,6 +129,281 @@ def regular_session_quality(
         "latest_complete_session": latest_session,
         "calendar_name": "NYSE",
         "timezone": NEW_YORK,
+    }
+
+
+def candle_diagnostics(
+    frame: pd.DataFrame,
+    start: pd.Timestamp,
+    end: pd.Timestamp,
+    min_minutes: int = 3,
+    split_cutoff: date = date(2025, 11, 17),
+) -> dict[str, Any]:
+    """Summarize regular-session five-minute grid candles without labels or features."""
+    start_utc = pd.Timestamp(start).tz_convert(UTC)
+    end_utc = pd.Timestamp(end).tz_convert(UTC)
+    timestamp_series = pd.to_datetime(frame["timestamp"], utc=True, errors="coerce")
+    valid = timestamp_series.notna()
+    bars = frame.loc[valid].copy()
+    bars["timestamp"] = pd.DatetimeIndex(timestamp_series[valid]).as_unit("ns")
+    bars = bars.sort_values("timestamp", kind="mergesort").reset_index(drop=True)
+    timestamps = pd.DatetimeIndex(bars["timestamp"])
+    first_day = start_utc.tz_convert(NEW_YORK).date().isoformat()
+    last_day = end_utc.tz_convert(NEW_YORK).date().isoformat()
+    schedule = market_calendars.get_calendar("NYSE").schedule(
+        start_date=first_day, end_date=last_day
+    )
+
+    records: list[dict[str, Any]] = []
+    previous_session_close: float | None = None
+    five_minutes_ns = pd.Timedelta(minutes=5).value
+
+    for session_day, session in schedule.iterrows():
+        market_open = pd.Timestamp(session["market_open"]).tz_convert(UTC)
+        market_close = pd.Timestamp(session["market_close"]).tz_convert(UTC)
+        if market_open < start_utc or market_close > end_utc:
+            continue
+
+        lo = timestamps.searchsorted(market_open, side="left")
+        hi = timestamps.searchsorted(market_close, side="left")
+        session_bars = bars.iloc[lo:hi].copy()
+        candle_grid = pd.date_range(
+            market_open, market_close, freq="5min", inclusive="left"
+        )
+        if not session_bars.empty:
+            offsets = session_bars["timestamp"].array.asi8 - market_open.as_unit("ns").value
+            session_bars["_candle_index"] = offsets // five_minutes_ns
+            grouped = {
+                int(index): group.drop_duplicates("timestamp").sort_values("timestamp")
+                for index, group in session_bars.groupby("_candle_index", sort=True)
+            }
+        else:
+            grouped = {}
+
+        prior_grid_close = previous_session_close
+        prior_n_minutes: int | None = None
+        for candle_index, candle_start in enumerate(candle_grid):
+            real_bars = grouped.get(candle_index)
+            if real_bars is None or real_bars.empty:
+                n_minutes = 0
+                volume = 0.0
+                close = prior_grid_close
+                is_filled = True
+                if close is None:
+                    # Leading empty grid candles are dropped only before any close exists.
+                    continue
+            else:
+                n_minutes = min(5, int(real_bars["timestamp"].nunique()))
+                volume = float(real_bars["volume"].sum())
+                close = float(real_bars.iloc[-1]["close"])
+                is_filled = False
+
+            close_to_close_return = None
+            if candle_index > 0 and prior_grid_close is not None and prior_grid_close != 0:
+                close_to_close_return = float(close / prior_grid_close - 1.0)
+
+            candle_et = candle_start.tz_convert(NEW_YORK)
+            local_time = candle_et.time()
+            if time(9, 30) <= local_time < time(10, 0):
+                time_bucket = "open_09:30-10:00"
+            elif time(15, 30) <= local_time < time(16, 0):
+                time_bucket = "close_15:30-16:00"
+            else:
+                time_bucket = "midday"
+
+            records.append(
+                {
+                    "session_date": session_day.date(),
+                    "month": session_day.strftime("%Y-%m"),
+                    "weekday": session_day.day_name(),
+                    "split_period": (
+                        "before_2025-11-17"
+                        if session_day.date() < split_cutoff
+                        else "on_or_after_2025-11-17"
+                    ),
+                    "time_bucket": time_bucket,
+                    "candle_start_et": candle_et.isoformat(),
+                    "n_minutes": n_minutes,
+                    "is_filled": is_filled,
+                    "volume": volume,
+                    "close": float(close),
+                    "previous_n_minutes": prior_n_minutes,
+                    "close_to_close_return": close_to_close_return,
+                }
+            )
+            prior_grid_close = float(close)
+            prior_n_minutes = n_minutes
+
+        if not session_bars.empty:
+            last_real_bar = session_bars.sort_values("timestamp").iloc[-1]
+            previous_session_close = float(last_real_bar["close"])
+        elif prior_grid_close is not None:
+            previous_session_close = float(prior_grid_close)
+
+    candle_frame = pd.DataFrame.from_records(records)
+    total = len(candle_frame)
+
+    def summarize(group: pd.DataFrame) -> dict[str, Any]:
+        count = len(group)
+        below = int((group["n_minutes"] < min_minutes).sum()) if count else 0
+        return {
+            "candles": count,
+            "below_min_minutes": below,
+            "below_min_minutes_share": below / count if count else None,
+        }
+
+    def grouped_summaries(column: str) -> dict[str, Any]:
+        return {
+            str(key): summarize(group)
+            for key, group in candle_frame.groupby(column, sort=True)
+        }
+
+    distribution = {}
+    returns_by_count = {}
+    for n_minutes in range(6):
+        subset = candle_frame.loc[candle_frame["n_minutes"] == n_minutes]
+        valid_returns = subset["close_to_close_return"].dropna().abs()
+        distribution[str(n_minutes)] = {
+            "candles": len(subset),
+            "share": len(subset) / total if total else None,
+        }
+        returns_by_count[str(n_minutes)] = {
+            "candles": len(subset),
+            "return_observations": len(valid_returns),
+            "mean_absolute_return_pct": (
+                float(valid_returns.mean() * 100) if len(valid_returns) else None
+            ),
+            "mean_volume": float(subset["volume"].mean()) if len(subset) else None,
+        }
+
+    nonfilled_return_observations = candle_frame.loc[
+        candle_frame["n_minutes"].gt(0)
+        & candle_frame["close_to_close_return"].notna()
+    ]
+    zero_returns = int(
+        nonfilled_return_observations["close_to_close_return"].eq(0).sum()
+    )
+    filled_candles = int(candle_frame["is_filled"].sum()) if total else 0
+    return {
+        "candle_count": total,
+        "min_minutes": min_minutes,
+        "split_cutoff": split_cutoff.isoformat(),
+        "n_minutes_distribution": distribution,
+        "filled_candles": filled_candles,
+        "filled_share": filled_candles / total if total else None,
+        "below_min_minutes_by_month": grouped_summaries("month"),
+        "below_min_minutes_by_split_period": grouped_summaries("split_period"),
+        "below_min_minutes_by_time_bucket": grouped_summaries("time_bucket"),
+        "below_min_minutes_by_weekday": grouped_summaries("weekday"),
+        "nonfilled_close_to_close_pairs": len(nonfilled_return_observations),
+        "zero_return_pairs": zero_returns,
+        "zero_return_rate": (
+            zero_returns / len(nonfilled_return_observations)
+            if len(nonfilled_return_observations)
+            else None
+        ),
+        "return_and_volume_by_n_minutes": returns_by_count,
+    }
+
+
+def compare_feed_candle_closes(
+    iex_bars: pd.DataFrame,
+    sip_bars: pd.DataFrame,
+    start: pd.Timestamp,
+    end: pd.Timestamp,
+) -> dict[str, Any]:
+    """Compare IEX and SIP real five-minute closes on the same NYSE session grid."""
+    start_utc = pd.Timestamp(start).tz_convert(UTC)
+    end_utc = pd.Timestamp(end).tz_convert(UTC)
+
+    def prepare(frame: pd.DataFrame) -> pd.DataFrame:
+        result = frame.copy()
+        result["timestamp"] = pd.to_datetime(result["timestamp"], utc=True, errors="coerce")
+        result = result.dropna(subset=["timestamp"]).sort_values("timestamp").reset_index(drop=True)
+        result["timestamp"] = pd.DatetimeIndex(result["timestamp"]).as_unit("ns")
+        return result
+
+    iex = prepare(iex_bars)
+    sip = prepare(sip_bars)
+    schedule = market_calendars.get_calendar("NYSE").schedule(
+        start_date=start_utc.tz_convert(NEW_YORK).date().isoformat(),
+        end_date=end_utc.tz_convert(NEW_YORK).date().isoformat(),
+    )
+    comparison_frames = []
+    five_minutes_ns = pd.Timedelta(minutes=5).value
+
+    for session_day, session in schedule.iterrows():
+        market_open = pd.Timestamp(session["market_open"]).tz_convert(UTC)
+        market_close = pd.Timestamp(session["market_close"]).tz_convert(UTC)
+        if market_open < start_utc or market_close > end_utc:
+            continue
+        candle_grid = pd.date_range(
+            market_open, market_close, freq="5min", inclusive="left"
+        )
+
+        feed_groups = []
+        for feed_name, bars in (("iex", iex), ("sip", sip)):
+            timestamps = pd.DatetimeIndex(bars["timestamp"])
+            lo = timestamps.searchsorted(market_open, side="left")
+            hi = timestamps.searchsorted(market_close, side="left")
+            session_bars = bars.iloc[lo:hi].copy()
+            if session_bars.empty:
+                closes = pd.DataFrame(
+                    columns=[
+                        "candle_index",
+                        f"{feed_name}_count",
+                        f"{feed_name}_close",
+                    ]
+                )
+            else:
+                offsets = session_bars["timestamp"].array.asi8 - market_open.as_unit("ns").value
+                session_bars["candle_index"] = offsets // five_minutes_ns
+                closes = (
+                    session_bars.groupby("candle_index", sort=True)
+                    .agg(
+                        **{
+                            f"{feed_name}_count": ("timestamp", "nunique"),
+                            f"{feed_name}_close": ("close", "last"),
+                        }
+                    )
+                    .reset_index()
+                )
+            feed_groups.append(closes)
+
+        combined = feed_groups[0].merge(feed_groups[1], on="candle_index", how="outer")
+        combined = combined.set_index("candle_index").reindex(range(len(candle_grid)))
+        combined["session_date"] = str(session_day.date())
+        comparison_frames.append(combined.reset_index(names="candle_index"))
+
+    if not comparison_frames:
+        return {"sessions_compared": 0, "both_real_candles": 0, "different_close_count": 0}
+
+    comparisons = pd.concat(comparison_frames, ignore_index=True)
+    paired = comparisons.loc[comparisons["iex_count"].gt(0) & comparisons["sip_count"].gt(0)].copy()
+    differences_bps = (
+        (paired["iex_close"] / paired["sip_close"] - 1).abs() * 10_000
+        if len(paired)
+        else pd.Series(dtype=float)
+    )
+    different = paired["iex_close"].ne(paired["sip_close"])
+    return {
+        "sessions_compared": int(comparisons["session_date"].nunique()),
+        "regular_grid_candles": len(comparisons),
+        "iex_real_candles": int(comparisons["iex_count"].fillna(0).gt(0).sum()),
+        "sip_real_candles": int(comparisons["sip_count"].fillna(0).gt(0).sum()),
+        "both_real_candles": len(paired),
+        "different_close_count": int(different.sum()),
+        "different_close_share": float(different.mean()) if len(paired) else None,
+        "exact_match_count": int((~different).sum()),
+        "mean_absolute_close_difference_bps": (
+            float(differences_bps.mean()) if len(differences_bps) else None
+        ),
+        "median_absolute_close_difference_bps": (
+            float(differences_bps.median()) if len(differences_bps) else None
+        ),
+        "max_absolute_close_difference_bps": (
+            float(differences_bps.max()) if len(differences_bps) else None
+        ),
     }
 
 

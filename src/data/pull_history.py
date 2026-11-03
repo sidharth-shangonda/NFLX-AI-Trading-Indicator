@@ -18,6 +18,8 @@ sys.path.insert(0, str(ROOT / "src"))
 
 from nflx_indicator.config import ConfigurationError, load_settings  # noqa: E402
 from nflx_indicator.data_quality import (  # noqa: E402
+    candle_diagnostics,
+    compare_feed_candle_closes,
     regular_session_quality,
     split_adjustment_summary,
 )
@@ -85,11 +87,176 @@ def _manifest_from_frame(
     return build_manifest(files, frame, request)
 
 
+def _append_summary_table(
+    lines: list[str], heading: str, label: str, summaries: dict[str, Any]
+) -> None:
+    lines.extend(
+        [
+            f"### {heading}",
+            "",
+            f"| {label} | Candles | Below 3 | Below-3 share |",
+            "|---|---:|---:|---:|",
+        ]
+    )
+    for key, summary in summaries.items():
+        share = summary["below_min_minutes_share"]
+        share_text = "n/a" if share is None else f"{share:.2%}"
+        lines.append(
+            f"| {key} | {summary['candles']:,} | "
+            f"{summary['below_min_minutes']:,} | {share_text} |"
+        )
+    lines.append("")
+
+
+def _append_candle_diagnostics(lines: list[str], diagnostics: dict[str, Any]) -> None:
+    lines.extend(
+        [
+            "## Five-minute candle diagnostics",
+            "",
+            (
+                f"Total grid candles: {diagnostics['candle_count']:,}; filled "
+                f"(n=0): {diagnostics['filled_candles']:,} "
+                f"({diagnostics['filled_share']:.2%})."
+            ),
+            "",
+            "### n_minutes distribution",
+            "",
+            "| n_minutes | Candles | Share |",
+            "|---:|---:|---:|",
+        ]
+    )
+    for n_minutes, summary in diagnostics["n_minutes_distribution"].items():
+        lines.append(
+            f"| {n_minutes} | {summary['candles']:,} | {summary['share']:.2%} |"
+        )
+    lines.extend(
+        [
+            "",
+            (
+                "Zero-return rate: "
+                f"{diagnostics['zero_return_pairs']:,}/"
+                f"{diagnostics['nonfilled_close_to_close_pairs']:,} "
+                f"same-session close-to-close observations ending at a non-filled candle "
+                f"({diagnostics['zero_return_rate']:.2%})."
+            ),
+            "Returns are close-to-close, computed only within a session. The first "
+            "candle of each session has no return observation.",
+            "",
+        ]
+    )
+    _append_summary_table(
+        lines,
+        "Below-3 share by month",
+        "Session month",
+        diagnostics["below_min_minutes_by_month"],
+    )
+    _append_summary_table(
+        lines,
+        "Before and after split cutoff",
+        "Session period",
+        diagnostics["below_min_minutes_by_split_period"],
+    )
+    _append_summary_table(
+        lines,
+        "Below-3 share by time of day",
+        "ET candle-start bucket",
+        diagnostics["below_min_minutes_by_time_bucket"],
+    )
+    _append_summary_table(
+        lines,
+        "Below-3 share by weekday",
+        "Weekday",
+        diagnostics["below_min_minutes_by_weekday"],
+    )
+    lines.extend(
+        [
+            "### Mean absolute close-to-close return and volume by n_minutes",
+            "",
+            (
+                "| n_minutes | Candles | Return observations | Mean absolute "
+                "return (%) | Mean IEX volume |"
+            ),
+            "|---:|---:|---:|---:|---:|",
+        ]
+    )
+    for n_minutes, summary in diagnostics["return_and_volume_by_n_minutes"].items():
+        mean_return = summary["mean_absolute_return_pct"]
+        return_text = "n/a" if mean_return is None else f"{mean_return:.5f}"
+        mean_volume = summary["mean_volume"]
+        volume_text = "n/a" if mean_volume is None else f"{mean_volume:,.2f}"
+        lines.append(
+            f"| {n_minutes} | {summary['candles']:,} | "
+            f"{summary['return_observations']:,} | {return_text} | {volume_text} |"
+        )
+    lines.extend(
+        [
+            "",
+            "Returns are assigned to the current candle's n_minutes and compare its "
+            "close with the prior five-minute grid close. No overnight return is used; "
+            "n=0 closes carry forward and have zero volume by construction.",
+            "",
+            "### Training-window observation (not adopted)",
+            "",
+            (
+                "Below-3 sparsity was 12,014/21,966 candles (54.69%) before "
+                "2025-11-17 and 0/18,726 (0.00%) on/after it. The post-cutoff "
+                "sample contains 18,726 candles. This large coverage discontinuity "
+                "supports considering post-cutoff-only training, with full-history "
+                "training as a comparison experiment; it does not establish why "
+                "IEX coverage changed. This is a recommendation only and requires "
+                "owner approval before adopting a training window."
+            ),
+            "",
+        ]
+    )
+
+
+def _append_sip_diagnostic(lines: list[str], diagnostic: dict[str, Any]) -> None:
+    lines.extend(["## SIP feed comparison (diagnostic only)", ""])
+    if diagnostic["status"] != "ACCESSIBLE":
+        lines.append(
+            f"Status: **{diagnostic['status']}**; "
+            f"error type `{diagnostic.get('error_type')}`, "
+            f"HTTP status `{diagnostic.get('http_status')}`, "
+            f"API code `{diagnostic.get('api_code')}`. No SIP data used."
+        )
+        lines.append("")
+        return
+
+    lines.extend(
+        [
+            (
+                f"Historical `feed=sip` access succeeded for "
+                f"{diagnostic['start_utc']} through {diagnostic['end_utc']} "
+                "(five complete sessions; older than 15 minutes)."
+            ),
+            (
+                f"The sample returned {diagnostic['sip_rows']:,} 1-minute SIP rows. "
+                "On shared regular-session grid candles with real bars in both feeds, "
+                f"IEX and SIP closes differed in {diagnostic['different_close_count']:,}/"
+                f"{diagnostic['both_real_candles']:,} candles "
+                f"({diagnostic['different_close_share']:.2%})."
+            ),
+            (
+                "Absolute close differences: mean "
+                f"{diagnostic['mean_absolute_close_difference_bps']:.3f} bp, "
+                f"median {diagnostic['median_absolute_close_difference_bps']:.3f} bp, "
+                f"max {diagnostic['max_absolute_close_difference_bps']:.3f} bp."
+            ),
+            "This was an isolated diagnostic. SIP rows were not saved, committed, or "
+            "used for training or the live path.",
+            "",
+        ]
+    )
+
+
 def _write_quality_report(
     manifest: dict[str, Any],
     quality: dict[str, Any],
     timestamp_status: str,
     split_summary: dict[str, Any] | None = None,
+    diagnostics: dict[str, Any] | None = None,
+    sip_diagnostic: dict[str, Any] | None = None,
 ) -> None:
     percent_missing = quality["missing_minute_share"]
     percent_low = quality["candles_below_min_minutes_share"]
@@ -133,6 +300,7 @@ def _write_quality_report(
             f"- Candles with fewer than {MIN_MINUTES} real minute bars: "
             f"{quality['candles_below_min_minutes']:,} ({low_text})"
         ),
+        f"- MIN_MINUTES configured: {MIN_MINUTES} (unchanged)",
         f"- Zero-minute filled candles: {quality['candles_with_zero_minutes']:,}",
         "",
         "## Timestamp check",
@@ -184,7 +352,12 @@ def _write_quality_report(
             ),
         ]
     )
-    QUALITY_REPORT.write_text("\n".join(lines) + "\n")
+    if diagnostics is not None:
+        lines.extend([""])
+        _append_candle_diagnostics(lines, diagnostics)
+    if sip_diagnostic is not None:
+        _append_sip_diagnostic(lines, sip_diagnostic)
+    QUALITY_REPORT.write_text("\n".join(lines).rstrip() + "\n")
 
 
 def _write_unverified_report(
@@ -244,7 +417,8 @@ def _write_unverified_report(
         ),
         "",
         "The 5% pause condition uses `candles_below_min_minutes_share`.",
-        "If it exceeds 5%, stop and ask before changing any rule.",
+        "The measured share exceeds 5%; the owner directed that MIN_MINUTES remain 3.",
+        "The candle-t gate and t+1 label rule are recorded in SPEC section 3.",
     ]
     UNVERIFIED_REPORT.write_text("\n".join(lines) + "\n")
 
@@ -398,7 +572,48 @@ def verify_phase1() -> int:
         return 1
 
     split = split_adjustment_summary(raw, adjusted)
-    _write_quality_report(manifest, quality, timestamp_status, split)
+    diagnostics = candle_diagnostics(
+        frame, pd.Timestamp(start), pd.Timestamp(end), MIN_MINUTES
+    )
+
+    # SIP is an isolated five-session diagnostic. Never persist its rows or feed it
+    # into the frozen IEX snapshot, training, or live path.
+    sip_start = datetime(2026, 10, 26, tzinfo=UTC)
+    sip_end = datetime(2026, 10, 31, tzinfo=UTC)
+    try:
+        sip_frame = fetch_bars(
+            client, settings.symbol, sip_start, sip_end, "split", feed="sip"
+        )
+        comparison = compare_feed_candle_closes(
+            frame,
+            sip_frame,
+            pd.Timestamp(sip_start),
+            pd.Timestamp(sip_end),
+        )
+        sip_diagnostic = {
+            "status": "ACCESSIBLE" if len(sip_frame) else "EMPTY",
+            "start_utc": sip_start.isoformat(),
+            "end_utc": sip_end.isoformat(),
+            "sip_rows": len(sip_frame),
+            **comparison,
+        }
+    except Exception as exc:
+        response = getattr(exc, "response", None)
+        http_status = getattr(exc, "status_code", None) or getattr(
+            response, "status_code", None
+        )
+        api_code = getattr(exc, "error_code", None) or getattr(exc, "code", None)
+        denied = http_status in (401, 403) or str(api_code).startswith("403")
+        sip_diagnostic = {
+            "status": "DENIED" if denied else "ERROR",
+            "error_type": type(exc).__name__,
+            "http_status": http_status,
+            "api_code": api_code,
+        }
+
+    _write_quality_report(
+        manifest, quality, timestamp_status, split, diagnostics, sip_diagnostic
+    )
     _write_unverified_report(manifest, quality, split, timestamp_status, history_status)
     share = quality["candles_below_min_minutes_share"]
     print(
@@ -408,7 +623,7 @@ def verify_phase1() -> int:
         f"missing={quality['missing_regular_minutes']}/{quality['expected_regular_minutes']} "
         f"below3={quality['candles_below_min_minutes']}/{quality['regular_session_5m_candles']} "
         f"share={share} time={timestamp_status} split={split['status']} "
-        f"history={history_status}"
+        f"history={history_status} sip={sip_diagnostic['status']}"
     )
     if share is not None and share > 0.05:
         print("PAUSE threshold_share_over_5_percent: ask owner before changing any rule")

@@ -108,6 +108,8 @@ def test_compare_manifests_reports_drift_without_mutating_inputs() -> None:
 
 
 def test_fetch_bars_attaches_requested_symbol_to_sdk_bars() -> None:
+    from alpaca.data.enums import DataFeed
+
     class Bar:
         def model_dump(self) -> dict[str, object]:
             return {
@@ -125,11 +127,15 @@ def test_fetch_bars_attaches_requested_symbol_to_sdk_bars() -> None:
         data = {"NFLX": [Bar()]}
 
     class Client:
+        request = None
+
         def get_stock_bars(self, request_params: object) -> Result:
+            self.request = request_params
             return Result()
 
+    client = Client()
     bars = fetch_bars(
-        Client(),
+        client,
         "NFLX",
         datetime(2025, 1, 2, tzinfo=UTC),
         datetime(2025, 1, 3, tzinfo=UTC),
@@ -137,3 +143,13 @@ def test_fetch_bars_attaches_requested_symbol_to_sdk_bars() -> None:
 
     assert bars.loc[0, "symbol"] == "NFLX"
     assert bars.loc[0, "timestamp"] == pd.Timestamp("2025-01-02T14:30:00Z")
+    assert client.request.feed == DataFeed.IEX
+
+    fetch_bars(
+        client,
+        "NFLX",
+        datetime(2025, 1, 2, tzinfo=UTC),
+        datetime(2025, 1, 3, tzinfo=UTC),
+        feed="sip",
+    )
+    assert client.request.feed == DataFeed.SIP

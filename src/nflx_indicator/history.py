@@ -52,18 +52,25 @@ def fetch_bars(
     start: datetime,
     end: datetime,
     adjustment: str = "split",
+    feed: str = "iex",
 ) -> pd.DataFrame:
-    """Fetch minute bars; alpaca-py's StockHistoricalDataClient handles page tokens."""
+    """Fetch minute bars; SIP is reserved for the Phase 1 diagnostic only."""
     from alpaca.data.enums import Adjustment, DataFeed
     from alpaca.data.requests import StockBarsRequest
     from alpaca.data.timeframe import TimeFrame
+
+    feeds = {"iex": DataFeed.IEX, "sip": DataFeed.SIP}
+    try:
+        selected_feed = feeds[feed.lower()]
+    except KeyError as exc:
+        raise ValueError("feed must be iex or sip") from exc
 
     request = StockBarsRequest(
         symbol_or_symbols=symbol,
         timeframe=TimeFrame.Minute,
         start=start,
         end=end,
-        feed=DataFeed.IEX,
+        feed=selected_feed,
         adjustment=Adjustment(adjustment),
         sort="asc",
     )
