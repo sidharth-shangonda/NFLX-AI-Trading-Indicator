@@ -1,0 +1,149 @@
+{
+  "adjustment": "split",
+  "alpaca_py_version": "0.44.0",
+  "feed": "iex",
+  "files": [
+    {
+      "path": "2024-10.parquet",
+      "rows": 4983,
+      "sha256": "316f6a8cec9da78a5c0fb8b52f4a053b18268f1ed14742ec0dfe77316fcf8f00"
+    },
+    {
+      "path": "2024-11.parquet",
+      "rows": 4234,
+      "sha256": "784fe2c58b69e3d8e755f5de01799af9bfb87b6db1c8528eea44b1d4b5958981"
+    },
+    {
+      "path": "2024-12.parquet",
+      "rows": 3250,
+      "sha256": "c1342527ed3825fe3882d07b96fbd70d8f0b0779501bee6202ddbe887382ac28"
+    },
+    {
+      "path": "2025-01.parquet",
+      "rows": 4342,
+      "sha256": "5739edc9f9198ef86648a6285f16c38ac48cd0948abf080296999c5188f7aef3"
+    },
+    {
+      "path": "2025-02.parquet",
+      "rows": 3709,
+      "sha256": "2e80d78bfdf2be103c81aaca2b0a1d499ae0399815747bcbb51b2f29fa9d1588"
+    },
+    {
+      "path": "2025-03.parquet",
+      "rows": 4387,
+      "sha256": "85ab55b0c4eedb2669c2ec0cb60644bdb3551ae4998ff599537d917fad03b249"
+    },
+    {
+      "path": "2025-04.parquet",
+      "rows": 4599,
+      "sha256": "e42461b7152c364ce4e68e63e56128128a22f96820b06735c5a15177029ea98c"
+    },
+    {
+      "path": "2025-05.parquet",
+      "rows": 2961,
+      "sha256": "a8b1d2c475f7fbd1d065046f534bbbb2c8fc13c18950ae7881a3a55daa22d966"
+    },
+    {
+      "path": "2025-06.parquet",
+      "rows": 2324,
+      "sha256": "2786b41df968cd09057f5e8833f9a24897b4b311be5137f9f659c4214a8c3af1"
+    },
+    {
+      "path": "2025-07.parquet",
+      "rows": 3537,
+      "sha256": "5779ff36b77c056648c3724d03b85368447d82e1e17fb0483c429428289a9b89"
+    },
+    {
+      "path": "2025-08.parquet",
+      "rows": 2605,
+      "sha256": "d11c639fcf95f0f5fe84439e5d0c5d48d96894736eb15d129ed6ea7ffc35db08"
+    },
+    {
+      "path": "2025-09.parquet",
+      "rows": 3098,
+      "sha256": "b68d57f9777059eda06a989070f2bb54b193039121036752de13489961687f6d"
+    },
+    {
+      "path": "2025-10.parquet",
+      "rows": 4559,
+      "sha256": "458f9f9a8cbd8295d2318c6273aa4cded779b0b87711f8573f37cf580597f17f"
+    },
+    {
+      "path": "2025-11.parquet",
+      "rows": 7234,
+      "sha256": "c5e7292205ead3844513e91298952edb6b9e34f01a6c66c2c918238a36b84c2d"
+    },
+    {
+      "path": "2025-12.parquet",
+      "rows": 8627,
+      "sha256": "1714aa07629436a31069f237c69c437aa1c2d7b6e9d5534faad570a50658fc9a"
+    },
+    {
+      "path": "2026-01.parquet",
+      "rows": 7970,
+      "sha256": "33504bf6e5f7849867b911b0ffcbc734175fcc861268d9c36ac58d067cd15e76"
+    },
+    {
+      "path": "2026-02.parquet",
+      "rows": 7562,
+      "sha256": "1b75f622c8b3d1f1cdf1f16e22231c04ca314f06376feb5ce768e76ed781d5db"
+    },
+    {
+      "path": "2026-03.parquet",
+      "rows": 8714,
+      "sha256": "cf08dc3de86cd635fef4313f1b9f0349556d54afcc05d17cc665ee37562f8dab"
+    },
+    {
+      "path": "2026-04.parquet",
+      "rows": 8401,
+      "sha256": "350031019b04fc4c08acac0faaba2ea0cd3818c61625409ccae6d75193147ca3"
+    },
+    {
+      "path": "2026-05.parquet",
+      "rows": 7805,
+      "sha256": "92cd6bc30f01a91532a5432144ed9623a44b883124c48a69a535229fc2c4abd5"
+    },
+    {
+      "path": "2026-06.parquet",
+      "rows": 8209,
+      "sha256": "74bbea867a845a294b5c9735ee2eeb95a194c7412228e5ed02bdc30fef2e189d"
+    },
+    {
+      "path": "2026-07.parquet",
+      "rows": 8645,
+      "sha256": "4cb3162fa3d8526ef51af74d15a29050c06a25d29819903ffc3fcef93e19f1f8"
+    },
+    {
+      "path": "2026-08.parquet",
+      "rows": 8178,
+      "sha256": "49f857cb2f0015e7f1129cf210cb0acfa25fadfba487054c61195f033e374457"
+    },
+    {
+      "path": "2026-09.parquet",
+      "rows": 8177,
+      "sha256": "869215ae12bce5a5f134f1fd97c273404865d437a50b4dffd0abe1bc5eb31b9c"
+    },
+    {
+      "path": "2026-10.parquet",
+      "rows": 8624,
+      "sha256": "8ce6d576a65fa7d7eeae6c9010439cf142cb8ea2a4a1bc9440cc754980eb551f"
+    },
+    {
+      "path": "2026-11.parquet",
+      "rows": 390,
+      "sha256": "9fa82ef2d2a6af3039ead062bc32630aefe06ba81991845bd9b7c65bdfcc8370"
+    }
+  ],
+  "first_timestamp_utc": "2024-10-01T13:30:00+00:00",
+  "last_timestamp_utc": "2026-11-02T20:59:00+00:00",
+  "provider": "Alpaca Markets StockHistoricalDataClient",
+  "request_end_utc": "2026-11-03T09:13:00+00:00",
+  "request_start_utc": "2024-10-01T00:00:00+00:00",
+  "retrieved_at_utc": "2026-11-03T09:15:56.098524+00:00",
+  "row_count": 147124,
+  "schema_version": 1,
+  "snapshot_hash": "b9895df89c65acbf77493fbc8abb4a6afaa24688b497c427c0511cd81a1e80a9",
+  "sort": "asc",
+  "symbol": "NFLX",
+  "timeframe": "1Min"
+}

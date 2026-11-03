@@ -86,7 +86,10 @@ def _manifest_from_frame(
 
 
 def _write_quality_report(
-    manifest: dict[str, Any], quality: dict[str, Any], timestamp_status: str
+    manifest: dict[str, Any],
+    quality: dict[str, Any],
+    timestamp_status: str,
+    split_summary: dict[str, Any] | None = None,
 ) -> None:
     percent_missing = quality["missing_minute_share"]
     percent_low = quality["candles_below_min_minutes_share"]
@@ -142,17 +145,45 @@ def _write_quality_report(
             "`docs/evidence/alpaca_historical_bars.md`."
         ),
         "",
-        (
-            "Counts use complete NYSE regular sessions only. A missing minute means no "
-            "returned bar occupied that slot."
-        ),
-        "This does not establish whether the cause was no eligible IEX trade or a data gap.",
+        "## Split-adjustment check",
         "",
-        (
-            "No parquet rows are committed. Rebuild steps are in `README.md`; the "
-            "manifest and content hashes are in `docs/data_manifest.json`."
-        ),
     ]
+    if split_summary is None:
+        lines.append("Not yet checked; run `make verify-data` after the snapshot is frozen.")
+    else:
+        lines.extend(
+            [
+                f"- Status: **{split_summary.get('status', 'UNVERIFIED')}**",
+                (
+                    "- Pre-split adjusted/raw close factor: "
+                    f"{split_summary.get('pre_split_adjusted_to_raw_close_factor')}"
+                ),
+                (
+                    "- Post-split adjusted/raw close factor: "
+                    f"{split_summary.get('post_split_adjusted_to_raw_close_factor')}"
+                ),
+                (
+                    "- Adjusted Nov 17 / Nov 14 close ratio: "
+                    f"{split_summary.get('split_adjusted_nov17_to_nov14_close_ratio')}"
+                ),
+                (f"- No approximately 10x jump: {split_summary.get('no_approximately_10x_jump')}"),
+            ]
+        )
+    lines.extend(
+        [
+            "",
+            (
+                "Counts use complete NYSE regular sessions only. A missing minute means no "
+                "returned bar occupied that slot."
+            ),
+            "This does not establish whether the cause was no eligible IEX trade or a data gap.",
+            "",
+            (
+                "No parquet rows are committed. Rebuild steps are in `README.md`; the "
+                "manifest and content hashes are in `docs/data_manifest.json`."
+            ),
+        ]
+    )
     QUALITY_REPORT.write_text("\n".join(lines) + "\n")
 
 
@@ -367,9 +398,8 @@ def verify_phase1() -> int:
         return 1
 
     split = split_adjustment_summary(raw, adjusted)
-    _write_quality_report(manifest, quality, timestamp_status)
+    _write_quality_report(manifest, quality, timestamp_status, split)
     _write_unverified_report(manifest, quality, split, timestamp_status, history_status)
-    _write_json(ROOT / "docs" / "split_adjustment_check.json", split)
     share = quality["candles_below_min_minutes_share"]
     print(
         "PHASE1_QC "
