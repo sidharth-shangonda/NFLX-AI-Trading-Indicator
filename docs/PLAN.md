@@ -1,0 +1,62 @@
+# PLAN - phases (living document: tick boxes, log surprises and decisions at the bottom)
+
+Rule: do ONE phase, run its acceptance checks, report, then STOP for my "go".
+
+## Phase 0 - setup
+Tasks: repo skeleton per AGENTS.md; pinned dependencies and lock; Makefile targets for setup/test/lint/data/train/serve/replay/score; .gitignore (.env, data/, models/*.bin as appropriate); .env.example (placeholders only); config module and `MIN_MINUTES=3` default; JSON logging; `docs/evidence/` notes and `docs/evidence/versions.md` with installed versions; scripts/check_alpaca.py (auth + fetch 10 NFLX bars feed=iex, print counts only). Tell me exactly how to create the Alpaca PAPER account and keys; I do that myself.
+Accept (offline): `make test` and `make lint` green; config and JSON logging checks pass; `git grep -inE '^(APCA_API_KEY_ID|APCA_API_SECRET_KEY)='` shows only placeholder values in `.env.example` and no committed real credentials. The owner runs `python scripts/check_alpaca.py` after creating keys and adding them to `.env`; it must print `OK` and a bar count. Do not mark Phase 0 complete until the owner reports that run's printed counts.
+- [ ] done
+
+## Phase 1 - data + resolve UNVERIFIED items
+Tasks: src/data/pull_history.py (1-min NFLX, feed=iex, adjustment=split, paginated, >= 2 years or earliest available) -> temporary download and an explicitly frozen local snapshot of per-month parquet files plus `data/manifest.json` (params, retrieval time, provider metadata, per-file content SHA-256, deterministic snapshot hash). `make data` re-downloads to a temp directory, reports row-count/hash drift against the snapshot, and never overwrites it silently; initial snapshot creation must be explicit. QC report docs/data_quality.md (date range, candle count, missing minutes, duplicates, invalid OHLC, split handling, n_minutes below MIN_MINUTES, limitations); docs/unverified_results.md answers Phase 1 items a-d and f-h from SPEC section 2. Item e stays UNVERIFIED until Phase 7 has a live capture. Re-check every changeable claim in SPEC section 2 and update its evidence note.
+Accept: snapshot hashes depend only on sorted file paths and file contents, not retrieval metadata; drift is reported without modifying the frozen snapshot; no ~10x price jump around 2025-11-14 to 2025-11-17; first regular bar timestamp check passes; historical gap statistics and counts below MIN_MINUTES are written. If access fails: report a blocker and the setup fix, do NOT invent data. If below-MIN_MINUTES candles appear frequent, stop and ask before changing the threshold/rule.
+- [ ] done
+
+## Phase 2 - candles, labels, features, leakage tests
+Tasks: src/data/candles.py (shared 5-min builder), session filter via pandas_market_calendars NYSE, src/labels, src/features/features.py, config/events.yaml (verify earnings dates from ir.netflix.net).
+Accept: `make test` includes no-look-ahead test, determinism test, DST (1 Nov 2026) + early-close tests, zero-return-rate report.
+- [ ] done
+
+## Phase 3 - baselines, models, walk-forward (dev data only)
+Tasks: src/eval/walkforward.py (by trading day, 1-day gap, holdout guard + access log), baselines, LR, HGB (early_stopping=False), RF, feature-family ablations, optional h=2 ablation (validation only, not shipped), experiments/experiments.csv, plots, docs/results_dev.md.
+Accept: `make train` runs end to end; holdout_access.log has ZERO entries; every trial in experiments.csv; selection rule applied as written.
+- [ ] done
+
+## Phase 4 - calibrate, set delta, ONE holdout run, freeze
+Tasks: calibration on OOF; delta on OOF; single holdout evaluation (ALLOW_HOLDOUT=1) -> docs/results_holdout.md (never edited afterwards); model artifact + metadata (version, data hash, git hash, feature list, delta, calibrator) + docs/model_card.md; tag model-v1.
+Accept: holdout_access.log has exactly one entry; artifact reproduces from a clean clone; results written honestly even if no model beats baselines.
+- [ ] done
+
+## Phase 5 - live backend
+Tasks: ingestor (alpaca-py, handle event loop issue), 1-min store, candle builder, finalizer (35 s grace), inference, insert-only predictions + triggers, outcome evaluator, websocket + REST, REPLAY mode, test-stream mode, structured logs, clock-offset check.
+Accept: all section-6 tests for these parts pass; run against the TEST stream and a REPLAY of recorded real data (each labeled); kill/restart and reconnect scenarios produce no duplicate predictions.
+- [ ] done
+
+## Phase 6 - frontend
+Tasks: per SPEC section 5, including dual ET/IST times, all banner states demonstrable, attribution.
+Accept: screenshots of each banner state; signal readable at a glance; export CSV works.
+- [ ] done
+
+## Phase 7 - soak and freeze
+Tasks: run live paper mode >= 3 market days on the laptop (keep it awake; one stream connection only); diff live-recorded bars vs next-morning REST bars (this resolves UNVERIFIED item e only after a live capture exists); fix BUGS only, no model tuning; write host runbook (start, restart, rotate keys, what to do on outage); tag release-v1. Start the five-day live evaluation only after the soak and release freeze; schedule it to fit the submission window where possible.
+Accept: diff report in docs/live_vs_history.md; zero repaint incidents; runbook tested by a cold restart; item e evidence recorded or remains explicitly UNVERIFIED if a valid live capture could not be obtained.
+- [ ] done
+
+## Phase 8 - docs and scoring
+Tasks: README with reproduce-from-clean-clone steps; docs/traceability.md mapping R1-R9 to code/test/deliverable; report skeleton with citations and a "what did not work" section; user guide ("when NOT to trust it", IEX-vs-TradingView difference, no-signal meaning); demo checklist; `make score` script (baselines on same candles, calibration, outages, event-session split, simulated P&L reported separately).
+Accept: fresh clone + `make setup && make test` works; `make score` runs on recorded data.
+- [ ] done
+
+## Optional (needs my approval): Phase 9 - scenarios (q20/q50/q80) and/or Finnhub emergency fallback adapter.
+
+## Log (surprises, decisions, blockers)
+(append as you go)
+
+- 2026-11-03: User set the submission window to about two weeks (target around 2026-11-17; exact deadline not specified), chose the laptop for now, and will create the Alpaca Paper account and store keys in `.env`. Recommend starting the five-day no-change live evaluation only after Phase 7 soak and `release-v1` freeze; exact start date remains TBD until the implementation and soak pass.
+- 2026-11-03: Reproducibility uses a frozen local per-month parquet snapshot; its deterministic hash excludes retrieval/provider metadata. `make data` compares a temp re-download and cannot silently overwrite the snapshot. Initial snapshot creation must be explicit.
+- 2026-11-03: Candle gap rules use the regular-session grid, real-bar-only OHLCV, `n_minutes`, zero-minute filled candles, and `MIN_MINUTES=3`; report below-threshold frequency in Phase 1 and ask before changing the rule if it is frequent.
+- 2026-11-03: Phase 0 offline checks can pass before credentials are available, but the phase checkbox stays open until the owner reports the authenticated check's printed counts.
+- 2026-11-03: Evidence notes are short, link to sources, and record retrieval date plus source/library version (or say unversioned); Phase 1 rechecks changeable section 2 claims. Item e moved to Phase 7 and remains UNVERIFIED until live-vs-REST comparison.
+- Open question for Phase 1: define how to fill a zero-minute candle when no prior close exists at the beginning of the frozen snapshot. Also, “frequent” below-MIN_MINUTES candles has no numeric cutoff; report the rate and pause for owner direction rather than inventing a threshold.
+- Open question before Phase 8: `data/` is ignored by Git per the project rules, so a frozen local parquet snapshot and manifest will not be available from a clean clone unless a sharing/archival policy is selected. Keep experiment snapshot hashes, but resolve how the actual snapshot is delivered before claiming clean-clone reproducibility.
+- 2026-11-03: Phase 0 implementation created the initial Git repository because the project folder had no `.git`; offline test/lint acceptance is recorded at handoff. The authenticated Alpaca check remains owner-run and Phase 0 remains unchecked until its printed bar count is reported.

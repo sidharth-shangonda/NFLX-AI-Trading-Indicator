@@ -1,0 +1,10 @@
+[market_data]
+symbol = "NFLX"
+feed = "iex"
+adjustment = "split"
+
+[data]
+min_minutes = 3
+
+[live]
+finalization_grace_seconds = 35
