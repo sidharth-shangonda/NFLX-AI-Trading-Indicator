@@ -4,7 +4,7 @@ PIP := $(PYTHON) -m pip
 RUFF := $(VENV)/bin/ruff
 PYTEST := $(PYTHON) -m pytest
 
-.PHONY: setup test lint check-alpaca data train serve replay score
+.PHONY: setup test lint check-alpaca data data-freeze verify-data train serve replay score
 
 setup:
 	python3 -m venv $(VENV)
@@ -20,7 +20,13 @@ check-alpaca:
 	$(PYTHON) scripts/check_alpaca.py
 
 data:
-	$(PYTHON) scripts/phase_gate.py --phase 1 --target data
+	$(PYTHON) src/data/pull_history.py
+
+data-freeze:
+	$(PYTHON) src/data/pull_history.py --freeze-initial
+
+verify-data:
+	$(PYTHON) src/data/pull_history.py --verify-phase1
 
 train:
 	$(PYTHON) scripts/phase_gate.py --phase 3 --target train

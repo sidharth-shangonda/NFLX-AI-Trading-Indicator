@@ -1,6 +1,6 @@
 # Alpaca historical stock bars
 
-- Source URL: https://docs.alpaca.markets/us/reference/stockbars
-- Check date: 2026-10-28, as reported in the original SPEC; recheck in Phase 1.
-- Documentation version: online API reference, version not stated.
-- Note: The original SPEC reports 1-minute/5-minute bars, pagination, and feed/adjustment parameters. Confirm request limits, pagination behavior, and split-adjustment support against the current reference and an actual response.
+- Source URLs: https://docs.alpaca.markets/us/reference/stockbars ; https://docs.alpaca.markets/us/docs/market-data-faq
+- Retrieval date: 2026-11-03.
+- Documentation version: current API reference, version not stated.
+- Note: The stock-bars reference supports 1-minute requests, `feed=iex`, split adjustment, and up to 10,000 rows per page with continuation tokens. Alpaca's FAQ defines a minute timestamp as the interval's left edge and says a bar is omitted when no eligible trade updates prices; this documents aggregation behavior but cannot identify the cause of a particular historical gap.

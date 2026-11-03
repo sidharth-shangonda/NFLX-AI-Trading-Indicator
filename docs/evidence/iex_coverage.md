@@ -1,6 +1,6 @@
 # IEX coverage and price context
 
-- Source URL: https://iextrading.com/stats/
-- Check date: 2026-10-28, as reported in the original SPEC; recheck in Phase 1.
-- Documentation version: online statistics page, version not stated.
-- Note: The original SPEC reports that IEX is a small share of US trading volume and warns that IEX candles will differ from consolidated-market charts. The exact cited percentages and the separate Rosenblatt figure need current, directly linked evidence before use in the report.
+- Source URLs: https://docs.alpaca.markets/us/docs/about-market-data-api ; https://iextrading.com/stats/
+- Retrieval date: 2026-11-03.
+- Documentation version: current online plan page and IEX statistics page, versions not stated.
+- Note: Alpaca describes IEX as a single exchange and estimates it at approximately 2.5% of market volume, distinct from SIP's consolidated coverage. Older 2.8% and 3.89% figures in the original notes were not confirmed here and are removed from user-facing claims.

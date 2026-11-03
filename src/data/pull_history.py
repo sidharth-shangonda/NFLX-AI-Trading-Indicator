@@ -1,0 +1,406 @@
+"""Download, freeze, or compare historical 1-minute NFLX IEX bars."""
+
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import sys
+import tempfile
+from datetime import UTC, datetime
+from pathlib import Path
+from typing import Any
+
+import pandas as pd
+
+ROOT = Path(__file__).resolve().parents[2]
+sys.path.insert(0, str(ROOT / "src"))
+
+from nflx_indicator.config import ConfigurationError, load_settings  # noqa: E402
+from nflx_indicator.data_quality import (  # noqa: E402
+    regular_session_quality,
+    split_adjustment_summary,
+)
+from nflx_indicator.history import (  # noqa: E402
+    build_manifest,
+    compare_manifests,
+    fetch_bars,
+    write_monthly_parquet,
+)
+
+DATA_DIR = ROOT / "data"
+SNAPSHOT_DIR = DATA_DIR / "snapshot"
+LOCAL_MANIFEST = DATA_DIR / "manifest.json"
+TRACKED_MANIFEST = ROOT / "docs" / "data_manifest.json"
+QUALITY_REPORT = ROOT / "docs" / "data_quality.md"
+UNVERIFIED_REPORT = ROOT / "docs" / "unverified_results.md"
+DEFAULT_START = datetime(2024, 10, 1, tzinfo=UTC)
+MIN_MINUTES = 3
+
+
+def _write_json(path: Path, payload: dict[str, Any]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = path.with_suffix(path.suffix + ".tmp")
+    temporary.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n")
+    os.replace(temporary, path)
+
+
+def _read_json(path: Path) -> dict[str, Any]:
+    return json.loads(path.read_text())
+
+
+def _client(settings: Any) -> Any:
+    from alpaca.data.historical import StockHistoricalDataClient
+
+    key_id, secret_key = settings.require_alpaca_credentials()
+    return StockHistoricalDataClient(key_id, secret_key)
+
+
+def _now_utc() -> datetime:
+    return datetime.now(UTC).replace(second=0, microsecond=0)
+
+
+def _parse_utc(value: str) -> datetime:
+    parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    if parsed.tzinfo is None:
+        return parsed.replace(tzinfo=UTC)
+    return parsed.astimezone(UTC)
+
+
+def _request(start: datetime, end: datetime, adjustment: str = "split") -> dict[str, str]:
+    return {
+        "symbol": "NFLX",
+        "start": start.astimezone(UTC).isoformat(),
+        "end": end.astimezone(UTC).isoformat(),
+        "feed": "iex",
+        "adjustment": adjustment,
+        "timeframe": "1Min",
+        "sort": "asc",
+    }
+
+
+def _manifest_from_frame(
+    frame: pd.DataFrame, files: list[dict[str, Any]], request: dict[str, str]
+) -> dict[str, Any]:
+    return build_manifest(files, frame, request)
+
+
+def _write_quality_report(
+    manifest: dict[str, Any], quality: dict[str, Any], timestamp_status: str
+) -> None:
+    percent_missing = quality["missing_minute_share"]
+    percent_low = quality["candles_below_min_minutes_share"]
+    missing_text = "UNAVAILABLE" if percent_missing is None else f"{percent_missing:.4%}"
+    low_text = "UNAVAILABLE" if percent_low is None else f"{percent_low:.4%}"
+    latest = quality["latest_complete_session"] or {}
+    lines = [
+        "# Historical data quality",
+        "",
+        f"Snapshot hash: `{manifest['snapshot_hash']}`",
+        (
+            f"Requested range (UTC): `{manifest['request_start_utc']}` "
+            f"to `{manifest['request_end_utc']}`"
+        ),
+        (
+            f"Returned timestamp range (UTC): `{manifest['first_timestamp_utc']}` "
+            f"to `{manifest['last_timestamp_utc']}`"
+        ),
+        f"Total 1-minute rows: **{manifest['row_count']:,}**",
+        (
+            f"Files: **{len(manifest['files'])}** UTC calendar-month parquet files "
+            "(local, ignored by Git)"
+        ),
+        "",
+        "## Quality counts",
+        "",
+        f"- Complete NYSE sessions checked: {len(quality['complete_sessions']):,}",
+        f"- Regular-session rows: {quality['regular_session_rows']:,}",
+        f"- Pre/post-market or outside-session rows: {quality['extended_or_outside_rows']:,}",
+        f"- Expected regular-session minute slots: {quality['expected_regular_minutes']:,}",
+        (
+            f"- Missing regular-session minute slots: "
+            f"{quality['missing_regular_minutes']:,} ({missing_text})"
+        ),
+        f"- Duplicate timestamp rows: {quality['duplicate_timestamp_rows']:,}",
+        f"- Invalid OHLCV rows: {quality['invalid_ohlc_rows']:,}",
+        f"- Invalid timestamp rows: {quality['invalid_timestamp_rows']:,}",
+        f"- Off-grid regular-session timestamps: {quality['off_grid_regular_timestamps']:,}",
+        f"- Regular-session 5-minute grid candles: {quality['regular_session_5m_candles']:,}",
+        (
+            f"- Candles with fewer than {MIN_MINUTES} real minute bars: "
+            f"{quality['candles_below_min_minutes']:,} ({low_text})"
+        ),
+        f"- Zero-minute filled candles: {quality['candles_with_zero_minutes']:,}",
+        "",
+        "## Timestamp check",
+        "",
+        f"- Latest complete session first bar (ET): `{latest.get('first_bar_et')}`",
+        f"- First bar equals that session's 09:30 ET open: `{latest.get('first_bar_at_open')}`",
+        (
+            f"- Convention assessment: **{timestamp_status}**. Alpaca documents "
+            "minute timestamps as the interval's left edge; see "
+            "`docs/evidence/alpaca_historical_bars.md`."
+        ),
+        "",
+        (
+            "Counts use complete NYSE regular sessions only. A missing minute means no "
+            "returned bar occupied that slot."
+        ),
+        "This does not establish whether the cause was no eligible IEX trade or a data gap.",
+        "",
+        (
+            "No parquet rows are committed. Rebuild steps are in `README.md`; the "
+            "manifest and content hashes are in `docs/data_manifest.json`."
+        ),
+    ]
+    QUALITY_REPORT.write_text("\n".join(lines) + "\n")
+
+
+def _write_unverified_report(
+    manifest: dict[str, Any],
+    quality: dict[str, Any],
+    split: dict[str, Any],
+    timestamp_status: str,
+    history_status: str,
+) -> None:
+    low_share = quality["candles_below_min_minutes_share"]
+    low_share_text = "UNAVAILABLE" if low_share is None else f"{low_share:.4%}"
+    split_status = split.get("status", "UNVERIFIED")
+    split_detail = split.get("reason", "see split summary in data quality report and log")
+    lines = [
+        "# Phase 1 UNVERIFIED items",
+        "",
+        (
+            "Checked on 2026-11-03 against the frozen snapshot "
+            f"`{manifest['snapshot_hash']}` and official sources in `docs/evidence/`."
+        ),
+        "",
+        "| Item | Status | Phase 1 evidence |",
+        "|---|---|---|",
+        (
+            f"| a. Free IEX 1-minute history >= 2 years | {history_status} | "
+            f"{manifest['row_count']:,} rows; `{manifest['first_timestamp_utc']}` "
+            f"to `{manifest['last_timestamp_utc']}`. |"
+        ),
+        f"| b. Split adjustment applied | {split_status} | {split_detail}. |",
+        (
+            f"| c. Bar timestamp is interval start | {timestamp_status} | "
+            "First regular bar: "
+            f"`{(quality['latest_complete_session'] or {}).get('first_bar_et')}` ET; "
+            "official docs describe the left-edge convention. |"
+        ),
+        (
+            "| d. No eligible IEX trade may yield no bar | VERIFIED in docs; "
+            f"historical gap share measured | {quality['missing_regular_minutes']:,} "
+            f"missing minutes; below-3-minute candle share {low_share_text}. |"
+        ),
+        (
+            "| e. Live-recorded bars equal next-day REST bars | UNVERIFIED — Phase 7 | "
+            "No eligible live capture has been compared with next-day REST yet. |"
+        ),
+        (
+            "| f. Evaluator display/redistribution permission | UNVERIFIED | "
+            "The terms do not settle a private demo or derived signals. |"
+        ),
+        (
+            "| g. StockDataStream inside FastAPI loop | VERIFIED: thread/process | "
+            "Pinned `.run()` calls `asyncio.run`. |"
+        ),
+        (
+            "| h. HGB early-stopping split | VERIFIED with condition | "
+            "In sklearn 1.9.1, auto enables a random split above 10,000 samples; "
+            "set `early_stopping=False`. |"
+        ),
+        "",
+        "The 5% pause condition uses `candles_below_min_minutes_share`.",
+        "If it exceeds 5%, stop and ask before changing any rule.",
+    ]
+    UNVERIFIED_REPORT.write_text("\n".join(lines) + "\n")
+
+
+def freeze_initial(start: datetime, end: datetime) -> int:
+    if SNAPSHOT_DIR.exists() or LOCAL_MANIFEST.exists() or TRACKED_MANIFEST.exists():
+        print("BLOCKER snapshot_exists: refusing to overwrite an existing frozen snapshot")
+        return 2
+    DATA_DIR.mkdir(parents=True, exist_ok=True)
+    settings = load_settings()
+    try:
+        client = _client(settings)
+    except ConfigurationError:
+        print("BLOCKER missing_credentials: add paper keys to .env")
+        return 2
+    try:
+        with tempfile.TemporaryDirectory(prefix=".history-stage-", dir=DATA_DIR) as temp_name:
+            stage_root = Path(temp_name)
+            stage_snapshot = stage_root / "snapshot"
+            frame = fetch_bars(client, settings.symbol, start, end, "split")
+            files = write_monthly_parquet(frame, stage_snapshot)
+            request = _request(start, end, "split")
+            manifest = _manifest_from_frame(frame, files, request)
+            quality = regular_session_quality(
+                frame, pd.Timestamp(start), pd.Timestamp(end), MIN_MINUTES
+            )
+            _write_json(stage_root / "manifest.json", manifest)
+            if SNAPSHOT_DIR.exists() or LOCAL_MANIFEST.exists() or TRACKED_MANIFEST.exists():
+                print("BLOCKER snapshot_exists: refusing to overwrite an existing frozen snapshot")
+                return 2
+            os.replace(stage_snapshot, SNAPSHOT_DIR)
+            _write_json(LOCAL_MANIFEST, manifest)
+            _write_json(TRACKED_MANIFEST, manifest)
+            timestamp_status = (
+                "VERIFIED"
+                if (quality["latest_complete_session"] or {}).get("first_bar_at_open")
+                else "UNVERIFIED"
+            )
+            _write_quality_report(manifest, quality, timestamp_status)
+            print(
+                "SNAPSHOT_CREATED "
+                f"rows={manifest['row_count']} files={len(files)} "
+                f"first={manifest['first_timestamp_utc']} last={manifest['last_timestamp_utc']} "
+                f"snapshot_hash={manifest['snapshot_hash']}"
+            )
+            print(
+                "MIN_MINUTES "
+                f"below_3={quality['candles_below_min_minutes']} "
+                f"grid_candles={quality['regular_session_5m_candles']} "
+                f"share={quality['candles_below_min_minutes_share']}"
+            )
+            return 0
+    except Exception as exc:
+        status = getattr(exc, "status_code", None)
+        suffix = f" status={status}" if status is not None else f" error_type={type(exc).__name__}"
+        print(
+            f"BLOCKER history_download_failed{suffix}; inspect account/feed entitlement and network"
+        )
+        return 1
+
+
+def check_drift() -> int:
+    if not LOCAL_MANIFEST.exists() or not SNAPSHOT_DIR.is_dir():
+        print("BLOCKER no_frozen_snapshot: create one explicitly with make data-freeze")
+        return 2
+    expected = _read_json(LOCAL_MANIFEST)
+    start = _parse_utc(expected["request_start_utc"])
+    end = _parse_utc(expected["request_end_utc"])
+    settings = load_settings()
+    try:
+        client = _client(settings)
+    except ConfigurationError:
+        print("BLOCKER missing_credentials: add paper keys to .env")
+        return 2
+    try:
+        with tempfile.TemporaryDirectory(prefix="nflx-history-drift-") as temp_name:
+            temp_snapshot = Path(temp_name) / "snapshot"
+            frame = fetch_bars(client, settings.symbol, start, end, "split")
+            files = write_monthly_parquet(frame, temp_snapshot)
+            actual = _manifest_from_frame(
+                frame,
+                files,
+                _request(start, end, "split"),
+            )
+        comparison = compare_manifests(expected, actual)
+        status = "UNCHANGED" if not comparison["snapshot_hash_changed"] else "DRIFT"
+        print(
+            f"{status} rows_expected={comparison['expected_row_count']} "
+            f"rows_actual={comparison['actual_row_count']} "
+            f"hash_expected={comparison['expected_snapshot_hash']} "
+            f"hash_actual={comparison['actual_snapshot_hash']} "
+            f"changed_files={len(comparison['changed_files'])}"
+        )
+        for item in comparison["changed_files"]:
+            print(
+                f"FILE_DRIFT path={item['path']} rows_expected={item['expected_rows']} "
+                f"rows_actual={item['actual_rows']} sha_expected={item['expected_sha256']} "
+                f"sha_actual={item['actual_sha256']}"
+            )
+        print("SNAPSHOT_UNMODIFIED")
+        return 0
+    except Exception as exc:
+        status = getattr(exc, "status_code", None)
+        suffix = f" status={status}" if status is not None else f" error_type={type(exc).__name__}"
+        print(f"BLOCKER drift_download_failed{suffix}; frozen snapshot was not modified")
+        return 1
+
+
+def verify_phase1() -> int:
+    if not LOCAL_MANIFEST.exists() or not SNAPSHOT_DIR.is_dir():
+        print("BLOCKER no_frozen_snapshot: create one explicitly with make data-freeze")
+        return 2
+    manifest = _read_json(LOCAL_MANIFEST)
+    frame = pd.concat(
+        [pd.read_parquet(path) for path in sorted(SNAPSHOT_DIR.glob("*.parquet"))],
+        ignore_index=True,
+    )
+    start = _parse_utc(manifest["request_start_utc"])
+    end = _parse_utc(manifest["request_end_utc"])
+    quality = regular_session_quality(frame, pd.Timestamp(start), pd.Timestamp(end), MIN_MINUTES)
+    latest = quality["latest_complete_session"] or {}
+    timestamp_status = (
+        "VERIFIED"
+        if latest.get("first_bar_at_open")
+        else "UNVERIFIED: first observed bar did not equal 09:30 ET"
+    )
+    duration = pd.Timestamp(manifest["last_timestamp_utc"]) - pd.Timestamp(
+        manifest["first_timestamp_utc"]
+    )
+    history_status = (
+        "PASS >= 2 years"
+        if duration >= pd.Timedelta(days=730)
+        else "UNVERIFIED: less than 2 years returned"
+    )
+
+    settings = load_settings()
+    try:
+        client = _client(settings)
+    except ConfigurationError:
+        print("BLOCKER missing_credentials: add paper keys to .env")
+        return 2
+    split_start = datetime(2025, 11, 14, tzinfo=UTC)
+    split_end = datetime(2025, 11, 19, tzinfo=UTC)
+    try:
+        raw = fetch_bars(client, settings.symbol, split_start, split_end, "raw")
+        adjusted = fetch_bars(client, settings.symbol, split_start, split_end, "split")
+    except Exception as exc:
+        status = getattr(exc, "status_code", None)
+        suffix = f" status={status}" if status is not None else f" error_type={type(exc).__name__}"
+        print(f"BLOCKER split_check_failed{suffix}; snapshot is preserved")
+        return 1
+
+    split = split_adjustment_summary(raw, adjusted)
+    _write_quality_report(manifest, quality, timestamp_status)
+    _write_unverified_report(manifest, quality, split, timestamp_status, history_status)
+    _write_json(ROOT / "docs" / "split_adjustment_check.json", split)
+    share = quality["candles_below_min_minutes_share"]
+    print(
+        "PHASE1_QC "
+        f"rows={manifest['row_count']} "
+        f"range={manifest['first_timestamp_utc']}..{manifest['last_timestamp_utc']} "
+        f"missing={quality['missing_regular_minutes']}/{quality['expected_regular_minutes']} "
+        f"below3={quality['candles_below_min_minutes']}/{quality['regular_session_5m_candles']} "
+        f"share={share} time={timestamp_status} split={split['status']} "
+        f"history={history_status}"
+    )
+    if share is not None and share > 0.05:
+        print("PAUSE threshold_share_over_5_percent: ask owner before changing any rule")
+    return 0
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--freeze-initial", action="store_true")
+    parser.add_argument("--verify-phase1", action="store_true")
+    parser.add_argument("--start", default=DEFAULT_START.isoformat())
+    parser.add_argument("--end", default=None)
+    args = parser.parse_args()
+
+    if args.verify_phase1:
+        return verify_phase1()
+    if args.freeze_initial:
+        start = _parse_utc(args.start)
+        end = _parse_utc(args.end) if args.end else _now_utc()
+        return freeze_initial(start, end)
+    return check_drift()
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
