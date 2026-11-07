@@ -34,6 +34,13 @@ def test_baselines_only_use_train_target_and_define_rsi_no_signal_as_neutral() -
         test_features=test_x,
         seed=7,
     )
+    neutral = fit_predict(
+        "neutral_50_50",
+        train_features=train_x,
+        train_target=train_y,
+        test_features=test_x,
+        seed=7,
+    )
     rsi = fit_predict(
         "rsi_rule",
         train_features=train_x,
@@ -43,6 +50,7 @@ def test_baselines_only_use_train_target_and_define_rsi_no_signal_as_neutral() -
     )
 
     assert majority.probabilities.tolist() == [1.0] * 4
+    assert neutral.probabilities.tolist() == [0.5] * 4
     assert rsi.probabilities.tolist() == [1.0, 0.5, 0.5, 0.0]
     assert rsi.signal_mask.tolist() == [True, False, False, True]
 

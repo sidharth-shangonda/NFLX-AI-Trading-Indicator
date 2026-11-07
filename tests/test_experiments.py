@@ -7,6 +7,7 @@ from eval.experiments import _selection_summary
 
 def test_selection_requires_every_baseline_pooled_and_majority_fold_wins() -> None:
     methods = [
+        "neutral_50_50",
         "always_up",
         "always_down",
         "majority_class",

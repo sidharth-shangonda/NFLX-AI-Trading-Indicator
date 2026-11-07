@@ -14,6 +14,7 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 
 BASELINE_NAMES: Final = (
+    "neutral_50_50",
     "always_up",
     "always_down",
     "majority_class",
@@ -133,6 +134,8 @@ def _baseline_predictions(
     test_features: pd.DataFrame,
 ) -> PredictionOutput:
     count = len(test_features)
+    if method == "neutral_50_50":
+        return PredictionOutput(np.full(count, 0.5), np.ones(count, dtype=bool))
     if method == "always_up":
         return PredictionOutput(np.ones(count), np.ones(count, dtype=bool))
     if method == "always_down":

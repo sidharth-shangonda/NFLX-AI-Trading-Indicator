@@ -433,7 +433,7 @@ def _write_results(
         *_format_summary_table(run.summaries.loc[run.summaries["feature_set"] == "all_features"]),
         "",
         (
-            "`always_up`, `always_down`, `majority_class`, and "
+            "`neutral_50_50`, `always_up`, `always_down`, `majority_class`, and "
             "`previous_candle_direction` signal on every row. The RSI rule uses neutral "
             "P(UP)=0.5 outside RSI<30 / RSI>70, so its signal coverage is intentionally lower."
         ),
