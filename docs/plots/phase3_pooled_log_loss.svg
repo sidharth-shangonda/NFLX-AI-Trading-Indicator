@@ -1,0 +1,58 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="920" height="682" viewBox="0 0 920 682">
+<rect width="100%" height="100%" fill="#ffffff"/>
+<text x="32" y="34" font-family="system-ui, sans-serif" font-size="20" fill="#152238">Phase 3 pooled walk-forward log loss (development only)</text>
+<text x="32" y="76" font-family="system-ui, sans-serif" font-size="13" fill="#26364a">full_history · neutral_50_50</text>
+<rect x="410" y="58" width="33.64" height="20" rx="3" fill="#356ae6"/>
+<text x="453.64" y="74" font-family="system-ui, sans-serif" font-size="13" fill="#26364a">0.69315</text>
+<text x="32" y="110" font-family="system-ui, sans-serif" font-size="13" fill="#26364a">full_history · logistic_regression</text>
+<rect x="410" y="92" width="33.68" height="20" rx="3" fill="#356ae6"/>
+<text x="453.68" y="108" font-family="system-ui, sans-serif" font-size="13" fill="#26364a">0.69400</text>
+<text x="32" y="144" font-family="system-ui, sans-serif" font-size="13" fill="#26364a">full_history · random_forest</text>
+<rect x="410" y="126" width="33.68" height="20" rx="3" fill="#356ae6"/>
+<text x="453.68" y="142" font-family="system-ui, sans-serif" font-size="13" fill="#26364a">0.69403</text>
+<text x="32" y="178" font-family="system-ui, sans-serif" font-size="13" fill="#26364a">full_history · hist_gradient_boosting</text>
+<rect x="410" y="160" width="34.05" height="20" rx="3" fill="#356ae6"/>
+<text x="454.05" y="176" font-family="system-ui, sans-serif" font-size="13" fill="#26364a">0.70152</text>
+<text x="32" y="212" font-family="system-ui, sans-serif" font-size="13" fill="#26364a">full_history · rsi_rule</text>
+<rect x="410" y="194" width="117.82" height="20" rx="3" fill="#356ae6"/>
+<text x="537.82" y="210" font-family="system-ui, sans-serif" font-size="13" fill="#26364a">2.42769</text>
+<text x="32" y="246" font-family="system-ui, sans-serif" font-size="13" fill="#26364a">full_history · always_up</text>
+<rect x="410" y="228" width="335.02" height="20" rx="3" fill="#356ae6"/>
+<text x="755.02" y="244" font-family="system-ui, sans-serif" font-size="13" fill="#26364a">6.90309</text>
+<text x="32" y="280" font-family="system-ui, sans-serif" font-size="13" fill="#26364a">full_history · majority_class</text>
+<rect x="410" y="262" width="335.02" height="20" rx="3" fill="#356ae6"/>
+<text x="755.02" y="278" font-family="system-ui, sans-serif" font-size="13" fill="#26364a">6.90309</text>
+<text x="32" y="314" font-family="system-ui, sans-serif" font-size="13" fill="#26364a">full_history · always_down</text>
+<rect x="410" y="296" width="335.47" height="20" rx="3" fill="#356ae6"/>
+<text x="755.47" y="312" font-family="system-ui, sans-serif" font-size="13" fill="#26364a">6.91242</text>
+<text x="32" y="348" font-family="system-ui, sans-serif" font-size="13" fill="#26364a">full_history · previous_candle_direction</text>
+<rect x="410" y="330" width="339.04" height="20" rx="3" fill="#356ae6"/>
+<text x="759.04" y="346" font-family="system-ui, sans-serif" font-size="13" fill="#26364a">6.98588</text>
+<text x="32" y="382" font-family="system-ui, sans-serif" font-size="13" fill="#26364a">post_split · neutral_50_50</text>
+<rect x="410" y="364" width="33.64" height="20" rx="3" fill="#009688"/>
+<text x="453.64" y="380" font-family="system-ui, sans-serif" font-size="13" fill="#26364a">0.69315</text>
+<text x="32" y="416" font-family="system-ui, sans-serif" font-size="13" fill="#26364a">post_split · logistic_regression</text>
+<rect x="410" y="398" width="33.76" height="20" rx="3" fill="#009688"/>
+<text x="453.76" y="414" font-family="system-ui, sans-serif" font-size="13" fill="#26364a">0.69568</text>
+<text x="32" y="450" font-family="system-ui, sans-serif" font-size="13" fill="#26364a">post_split · random_forest</text>
+<rect x="410" y="432" width="33.76" height="20" rx="3" fill="#009688"/>
+<text x="453.76" y="448" font-family="system-ui, sans-serif" font-size="13" fill="#26364a">0.69570</text>
+<text x="32" y="484" font-family="system-ui, sans-serif" font-size="13" fill="#26364a">post_split · hist_gradient_boosting</text>
+<rect x="410" y="466" width="34.07" height="20" rx="3" fill="#009688"/>
+<text x="454.07" y="482" font-family="system-ui, sans-serif" font-size="13" fill="#26364a">0.70197</text>
+<text x="32" y="518" font-family="system-ui, sans-serif" font-size="13" fill="#26364a">post_split · rsi_rule</text>
+<rect x="410" y="500" width="116.41" height="20" rx="3" fill="#009688"/>
+<text x="536.41" y="516" font-family="system-ui, sans-serif" font-size="13" fill="#26364a">2.39866</text>
+<text x="32" y="552" font-family="system-ui, sans-serif" font-size="13" fill="#26364a">post_split · always_up</text>
+<rect x="410" y="534" width="334.04" height="20" rx="3" fill="#009688"/>
+<text x="754.04" y="550" font-family="system-ui, sans-serif" font-size="13" fill="#26364a">6.88294</text>
+<text x="32" y="586" font-family="system-ui, sans-serif" font-size="13" fill="#26364a">post_split · always_down</text>
+<rect x="410" y="568" width="336.45" height="20" rx="3" fill="#009688"/>
+<text x="756.45" y="584" font-family="system-ui, sans-serif" font-size="13" fill="#26364a">6.93257</text>
+<text x="32" y="620" font-family="system-ui, sans-serif" font-size="13" fill="#26364a">post_split · majority_class</text>
+<rect x="410" y="602" width="336.45" height="20" rx="3" fill="#009688"/>
+<text x="756.45" y="618" font-family="system-ui, sans-serif" font-size="13" fill="#26364a">6.93257</text>
+<text x="32" y="654" font-family="system-ui, sans-serif" font-size="13" fill="#26364a">post_split · previous_candle_direction</text>
+<rect x="410" y="636" width="340.00" height="20" rx="3" fill="#009688"/>
+<text x="760.00" y="652" font-family="system-ui, sans-serif" font-size="13" fill="#26364a">7.00576</text>
+</svg>
