@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0b1220">
+  <title>NFLX AI Indicator</title>
+  <script src="https://unpkg.com/lightweight-charts@5.2.0/dist/lightweight-charts.standalone.production.js"></script>
+  <style>
+    :root { color-scheme: dark; --bg:#0b1220; --panel:#111c2d; --line:#25364c; --text:#e9f0f8; --muted:#96a9bf; --blue:#62a7ff; --orange:#ff9d63; --green:#46d39a; }
+    * { box-sizing:border-box; }
+    body { margin:0; background:radial-gradient(1000px 500px at 15% -20%,#173252 0%,transparent 65%),var(--bg); color:var(--text); font:15px/1.45 Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
+    button { border:1px solid #3b5b7d; border-radius:10px; color:var(--text); background:#16283d; padding:9px 13px; font:inherit; cursor:pointer; }
+    button:hover { border-color:var(--blue); background:#1b3551; }
+    .shell { max-width:1440px; margin:0 auto; padding:24px; }
+    header { display:flex; justify-content:space-between; align-items:center; gap:16px; margin-bottom:18px; }
+    .brand { display:flex; align-items:center; gap:13px; }
+    .logo { display:grid; place-items:center; width:43px;height:43px;border-radius:12px;background:linear-gradient(135deg,#1e4a73,#12263b);font-weight:800;color:#9dcaff;letter-spacing:-1px; }
+    h1 { font-size:20px; margin:0; letter-spacing:-.3px; }
+    .sub { color:var(--muted); font-size:12px; margin-top:2px; }
+    .head-actions { display:flex; align-items:center; gap:10px; }
+    .market-hours { color:var(--muted);font-size:11px;text-align:right; }
+    .feed { display:inline-flex;align-items:center;gap:8px;padding:8px 12px;border:1px solid var(--line);border-radius:999px;background:#101b2a;color:#c7d7e8;font-size:12px;font-weight:700;letter-spacing:.04em; }
+    .dot { width:8px;height:8px;border-radius:50%;background:#73869b; }
+    .feed.live .dot { background:var(--green);box-shadow:0 0 10px #46d39a88; }
+    .feed.stale .dot,.feed.error .dot { background:#ff756e; }
+    .feed.test .dot { background:#ffcf64; }
+    .grid { display:grid;grid-template-columns:minmax(0,1.7fr) minmax(300px,.8fr);gap:16px;align-items:stretch; }
+    .panel { background:linear-gradient(180deg,#121f31,#101a29);border:1px solid var(--line);border-radius:16px;box-shadow:0 12px 30px #0002; }
+    .chart-panel { padding:16px 16px 10px;min-height:470px; }
+    .panel-head { display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:12px; }
+    h2 { margin:0;font-size:14px;font-weight:700; }
+    .symbol { color:#a9bfd5;font-size:12px; }
+    #chart { width:100%;height:390px; }
+    .chart-footer { display:flex;justify-content:space-between;color:var(--muted);font-size:11px;padding:8px 2px 0; }
+    .side { display:flex;flex-direction:column;gap:16px; }
+    .signal { padding:21px;min-height:192px;display:flex;flex-direction:column;justify-content:space-between; }
+    .eyebrow { color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.11em;font-weight:700; }
+    .signal-main { font-size:38px;line-height:1.1;font-weight:800;letter-spacing:-1.4px;margin:8px 0; }
+    .signal-main.up { color:var(--blue); }.signal-main.down { color:var(--orange); }.signal-main.none { color:#d5dfeb; }
+    .signal-meta { color:#a9bfd5;font-size:12px; }
+    .signal-note { color:#849ab2;font-size:11px;margin-top:7px; }
+    .stats { display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:15px; }
+    .stat { padding:12px;border-radius:11px;background:#0c1624;border:1px solid #1d2b3e; }
+    .stat-label { color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.08em; }
+    .stat-value { margin-top:5px;font-size:13px;font-weight:650;overflow-wrap:anywhere; }
+    .history { margin-top:16px;padding:16px; }
+    .table-wrap { overflow:auto;margin-top:12px; }
+    table { width:100%;border-collapse:collapse;font-size:12px;min-width:690px; }
+    th { text-align:left;color:#8da3bb;font-size:10px;text-transform:uppercase;letter-spacing:.08em;font-weight:700;padding:9px 8px;border-bottom:1px solid var(--line); }
+    td { padding:10px 8px;border-bottom:1px solid #1c2a3a;color:#d0dceb; }
+    tr:last-child td { border-bottom:0; }
+    .pill { display:inline-block;padding:3px 8px;border-radius:999px;font-size:10px;font-weight:800;letter-spacing:.03em; }
+    .pill.up { color:#9ccaff;background:#193b5b; }.pill.down { color:#ffc19c;background:#4a2d22; }.pill.none { color:#bbc7d5;background:#263342; }
+    details { margin-top:16px; }
+    summary { cursor:pointer;color:#b4c8dc;font-weight:650;font-size:13px; }
+    .diag { display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin-top:13px; }
+    .diag .stat { min-height:66px; }
+    .footnote { margin:16px 2px 0;color:#73879d;font-size:10px;display:flex;justify-content:space-between;gap:12px; }
+    .footnote a { color:#92bfff; }
+    .empty { text-align:center;color:#859ab0;padding:22px; }
+    @media(max-width:900px) { .grid{grid-template-columns:1fr}.side{display:grid;grid-template-columns:1fr 1fr}.signal{grid-column:span 2}.diag{grid-template-columns:repeat(2,1fr)} }
+    @media(max-width:560px) { .shell{padding:14px}.head-actions{align-items:flex-end;flex-direction:column}.brand{gap:9px}.logo{width:38px;height:38px}h1{font-size:17px}.chart-panel{min-height:380px;padding:12px}#chart{height:300px}.side{display:flex}.signal{min-height:175px}.signal-main{font-size:33px}.footnote{flex-direction:column} }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <header>
+      <div class="brand"><div class="logo">NFLX</div><div><h1>NFLX AI Indicator</h1><div class="sub">Five minute chart · next candle outlook</div></div></div>
+      <div class="head-actions"><div id="market-hours" class="market-hours" hidden></div><div id="feed" class="feed"><span class="dot"></span><span id="feed-text">CONNECTING</span></div><button id="replay-button" hidden>Run replay</button></div>
+    </header>
+    <section class="grid">
+      <section class="panel chart-panel">
+        <div class="panel-head"><h2>Price action</h2><div class="symbol">NASDAQ · NFLX · IEX</div></div>
+        <div id="chart"></div>
+        <div class="chart-footer"><span>Final candles only · thin candles are shaded in the signal history</span><span id="clock-label">NY · IST</span></div>
+      </section>
+      <aside class="side">
+        <section class="panel signal">
+          <div><div class="eyebrow">Next 5 minute candle</div><div id="signal" class="signal-main none">NO CLEAR SIGNAL</div><div id="confidence" class="signal-meta">Waiting for a final prediction</div></div>
+          <div><div id="signal-time" class="signal-meta">—</div><div id="signal-note" class="signal-note">Thin or uncertain data will be shown without a direction.</div></div>
+        </section>
+        <section class="panel stats">
+          <div class="stat"><div class="stat-label">Symbol</div><div class="stat-value">NASDAQ: NFLX</div></div>
+          <div class="stat"><div class="stat-label">Horizon</div><div class="stat-value">Next 5 minutes</div></div>
+          <div class="stat"><div class="stat-label">Model</div><div id="model-version" class="stat-value">model-v1</div></div>
+          <div class="stat"><div class="stat-label">Last bar</div><div id="last-bar" class="stat-value">Waiting</div></div>
+        </section>
+      </aside>
+    </section>
+    <section class="panel history">
+      <div class="panel-head"><h2>Final signal history</h2><a href="/api/predictions/export.csv" style="color:#91bdff;font-size:12px">Export CSV</a></div>
+      <div class="table-wrap"><table><thead><tr><th>Time · New York / IST</th><th>Signal</th><th>P(UP)</th><th>Outcome</th><th>Return</th><th>Feed</th></tr></thead><tbody id="history-body"><tr><td colspan="6" class="empty">No final predictions recorded yet.</td></tr></tbody></table></div>
+      <details><summary>Feed and model diagnostics</summary><div class="diag">
+        <div class="stat"><div class="stat-label">Feed state</div><div id="diag-state" class="stat-value">—</div></div>
+        <div class="stat"><div class="stat-label">Clock offset</div><div id="diag-clock" class="stat-value">—</div></div>
+        <div class="stat"><div class="stat-label">Last message</div><div id="diag-message" class="stat-value">—</div></div>
+        <div class="stat"><div class="stat-label">Data source</div><div id="diag-source" class="stat-value">IEX</div></div>
+      </div></details>
+    </section>
+    <div class="footnote"><span>Paper only · Indicator output is not investment advice · IEX is one exchange feed</span><span>TradingView <a href="https://www.tradingview.com/" target="_blank" rel="noreferrer">chart library attribution</a> · TradingView Lightweight Charts™ · Copyright (c) 2025 TradingView, Inc.</span></div>
+  </main>
+  <script>
+    const $ = (id) => document.getElementById(id);
+    const chartHost = $('chart');
+    const chart = LightweightCharts.createChart(chartHost, {
+      width: chartHost.clientWidth, height: chartHost.clientHeight, attributionLogo: true,
+      layout: { background: { color: '#111c2b' }, textColor: '#9bb0c6', fontFamily: 'Inter, system-ui, sans-serif' },
+      grid: { vertLines: { color: '#1a2a3c' }, horzLines: { color: '#1a2a3c' } },
+      rightPriceScale: { borderColor: '#293a4d' }, timeScale: { borderColor: '#293a4d', timeVisible: true, secondsVisible: false },
+      crosshair: { vertLine: { color: '#47617e' }, horzLine: { color: '#47617e' } },
+    });
+    const candles = chart.addSeries(LightweightCharts.CandlestickSeries, {
+      upColor: '#4e9cff', downColor: '#ff925d', borderUpColor: '#4e9cff', borderDownColor: '#ff925d', wickUpColor: '#7bb8ff', wickDownColor: '#ffb18b',
+    });
+    const finalTimes = new Set();
+    const provisionalMinutes = new Map();
+    const markers = [];
+    const markerApi = LightweightCharts.createSeriesMarkers(candles, markers);
+    const toSeconds = (iso) => Math.floor(Date.parse(iso) / 1000);
+    const formatDual = (iso) => {
+      if (!iso) return '—';
+      const d = new Date(iso);
+      const ny = new Intl.DateTimeFormat('en-US', { timeZone:'America/New_York', month:'short', day:'2-digit', hour:'2-digit', minute:'2-digit', hour12:false }).format(d);
+      const ist = new Intl.DateTimeFormat('en-IN', { timeZone:'Asia/Kolkata', day:'2-digit', hour:'2-digit', minute:'2-digit', hour12:false }).format(d);
+      return `${ny} ET / ${ist} IST`;
+    };
+    const setFeed = (state) => {
+      const badge = $('feed'); badge.className = 'feed';
+      if (state === 'LIVE-IEX') badge.classList.add('live');
+      if (state === 'STALE' || state === 'DISCONNECTED' || state === 'AUTH ERROR' || state === 'RATE LIMIT') badge.classList.add('error');
+      if (state === 'TEST STREAM') badge.classList.add('test');
+      badge.title = state === 'TEST STREAM' ? 'Synthetic test stream. Not market data.' : state;
+      $('feed-text').textContent = state;
+      $('diag-state').textContent = state;
+    };
+    const directionLabel = (value, reason) => value === 'NO_CLEAR_SIGNAL' && reason?.startsWith('thin_data') ? 'NO CLEAR SIGNAL (thin data)' : value === 'NO_CLEAR_SIGNAL' ? 'NO CLEAR SIGNAL' : value;
+    const setSignal = (prediction) => {
+      const direction = prediction.direction || 'NO_CLEAR_SIGNAL';
+      const signal = $('signal'); signal.textContent = directionLabel(direction, prediction.reason);
+      signal.className = `signal-main ${direction === 'UP' ? 'up' : direction === 'DOWN' ? 'down' : 'none'}`;
+      $('confidence').textContent = prediction.calibrated_p == null ? 'No model probability · prediction gated' : `${direction === 'UP' ? 'UP' : direction === 'DOWN' ? 'DOWN' : 'Model probability'} · ${(Number(prediction.calibrated_p) * 100).toFixed(1)}% P(UP)`;
+      $('signal-time').textContent = `${formatDual(prediction.candle_start)}${prediction.generated_late ? ' · late, excluded from live scoring' : ''}`;
+      $('signal-note').textContent = prediction.reason || 'Model estimate for the next finalized five minute candle.';
+    };
+    const addPredictionMarker = (prediction) => {
+      if (!prediction.candle_start || !['UP','DOWN'].includes(prediction.direction)) return;
+      const time = toSeconds(prediction.candle_start);
+      const existing = markers.findIndex((marker) => marker.time === time);
+      if (existing >= 0) markers.splice(existing,1);
+      markers.push({ time, position: prediction.direction === 'UP' ? 'belowBar' : 'aboveBar', color: prediction.direction === 'UP' ? '#62a7ff' : '#ff9d63', shape: prediction.direction === 'UP' ? 'arrowUp' : 'arrowDown', text: prediction.direction });
+      markers.sort((a,b)=>a.time-b.time); markerApi.setMarkers(markers);
+    };
+    const pill = (direction) => `<span class="pill ${direction === 'UP' ? 'up' : direction === 'DOWN' ? 'down' : 'none'}">${direction}</span>`;
+    const renderHistory = (rows) => {
+      const body = $('history-body');
+      if (!rows?.length) { body.innerHTML = '<tr><td colspan="6" class="empty">No final predictions recorded yet.</td></tr>'; return; }
+      body.innerHTML = rows.slice(0,100).map((row) => `<tr><td>${formatDual(row.candle_start)}</td><td>${pill(row.direction)} ${row.reason?.startsWith('thin_data') ? '<small>thin data</small>' : ''}</td><td>${row.calibrated_p == null ? '—' : (Number(row.calibrated_p)*100).toFixed(1)+'%'}</td><td>${row.realized_direction || row.outcome_status || 'Pending'}</td><td>${row.realized_return == null ? '—' : (Number(row.realized_return)*100).toFixed(3)+'%'}</td><td>${row.generated_late ? 'Late' : 'IEX'}</td></tr>`).join('');
+    };
+    const setHealth = (health) => {
+      setFeed(health.state);
+      const nextOpen = $('market-hours');
+      nextOpen.hidden = health.state !== 'MARKET CLOSED' || !health.next_open_at;
+      nextOpen.textContent = nextOpen.hidden ? '' : `Next open · ${formatDual(health.next_open_at)}`;
+    };
+    const loadSnapshot = async () => {
+      const [health, candleData, predictionData, model] = await Promise.all(['/api/health','/api/candles?limit=250','/api/predictions?limit=100','/api/model'].map(async (url) => { const r=await fetch(url); return r.json(); }));
+      setHealth(health); $('last-bar').textContent = formatDual(health.last_bar_at); $('diag-clock').textContent = health.clock_offset_seconds == null ? '—' : `${Number(health.clock_offset_seconds).toFixed(2)} sec`;
+      $('diag-message').textContent = health.last_message?.error || health.last_message?.state || 'Connected'; $('diag-source').textContent = health.state === 'TEST STREAM' ? 'Synthetic test data' : health.mode === 'REPLAY' ? 'Recorded IEX · REPLAY' : 'Alpaca IEX';
+      $('model-version').textContent = model.model_version || 'model-v1';
+      const data = candleData.items.map((row) => { const time=toSeconds(row.candle_start); finalTimes.add(time); return { time, open:Number(row.open), high:Number(row.high), low:Number(row.low), close:Number(row.close) }; });
+      if (data.length) { candles.setData(data); chart.timeScale().fitContent(); }
+      const predictions = predictionData.items || []; renderHistory(predictions);
+      if (predictions.length) { setSignal(predictions[0]); predictions.slice().reverse().forEach(addPredictionMarker); }
+      if (health.mode === 'REPLAY') $('replay-button').hidden = false;
+    };
+    const provisionalUpdate = (message) => {
+      const date = new Date(message.timestamp); date.setUTCSeconds(0,0); date.setUTCMinutes(Math.floor(date.getUTCMinutes()/5)*5);
+      const time = Math.floor(date.getTime()/1000); if (finalTimes.has(time)) return;
+      const minuteTime = Math.floor(Date.parse(message.timestamp)/60000)*60000;
+      provisionalMinutes.set(minuteTime, message);
+      const bars = [...provisionalMinutes.entries()].filter(([t]) => Math.floor(t/300000) === Math.floor(time*1000/300000)).sort((a,b)=>a[0]-b[0]).map((x)=>x[1]);
+      if (!bars.length) return;
+      candles.update({ time, open:Number(bars[0].open), high:Math.max(...bars.map(x=>Number(x.high))), low:Math.min(...bars.map(x=>Number(x.low))), close:Number(bars[bars.length-1].close) });
+    };
+    const handleMessage = async (message) => {
+      if (message.type === 'snapshot') { setHealth(message.health); return; }
+      if (message.type === 'health') setHealth(message);
+      if (message.type === 'candle_update') provisionalUpdate(message);
+      if (message.type === 'candle_final') {
+        const time = toSeconds(message.candle_start); finalTimes.add(time);
+        provisionalMinutes.forEach((_, key) => { if (Math.floor(key/300000) === Math.floor(time/300)) provisionalMinutes.delete(key); });
+        const update = await fetch('/api/candles?limit=250').then(r=>r.json());
+        candles.setData(update.items.map(row=>({time:toSeconds(row.candle_start),open:Number(row.open),high:Number(row.high),low:Number(row.low),close:Number(row.close)})));
+      }
+      if (message.type === 'prediction_final') { setSignal(message); addPredictionMarker(message); const rows=await fetch('/api/predictions?limit=100').then(r=>r.json());renderHistory(rows.items); }
+      if (message.type === 'outcome') { const rows=await fetch('/api/predictions?limit=100').then(r=>r.json());renderHistory(rows.items); }
+    };
+    let socket;
+    const connect = () => {
+      socket = new WebSocket(`${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/ws`);
+      socket.onmessage = (event) => { try { handleMessage(JSON.parse(event.data)); } catch (e) { console.error('UI update failed'); } };
+      socket.onclose = () => { setFeed('DISCONNECTED'); setTimeout(connect,2000); };
+      socket.onerror = () => socket.close();
+    };
+    $('replay-button').addEventListener('click', async () => { const button=$('replay-button');button.disabled=true;button.textContent='Running…';try{const result=await fetch('/api/replay',{method:'POST'}).then(r=>r.json());$('diag-message').textContent=result.error||`${result.candles_finalized} candles replayed`;await loadSnapshot();}finally{button.disabled=false;button.textContent='Run replay';} });
+    new ResizeObserver(() => chart.applyOptions({width:chartHost.clientWidth})).observe(chartHost);
+    loadSnapshot().then(connect).catch(() => { setFeed('DISCONNECTED'); connect(); });
+    setInterval(async()=>{try{const health=await fetch('/api/health').then(r=>r.json());setHealth(health);$('last-bar').textContent=formatDual(health.last_bar_at);$('diag-clock').textContent=health.clock_offset_seconds==null?'—':`${Number(health.clock_offset_seconds).toFixed(2)} sec`;}catch{setFeed('DISCONNECTED');}},5000);
+  </script>
+</body>
+</html>
