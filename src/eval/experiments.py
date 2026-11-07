@@ -351,7 +351,7 @@ def _render_svg(summaries: pd.DataFrame, path: Path) -> None:
     for index, (_, entry) in enumerate(entries.iterrows()):
         y = 58 + index * 34
         label = f"{entry['window']} · {entry['method']}"
-        bar_width = 440 * float(entry["log_loss"]) / max_loss
+        bar_width = 340 * float(entry["log_loss"]) / max_loss
         color = colors.get(str(entry["window"]), "#6b7280")
         lines.extend(
             [
