@@ -29,7 +29,7 @@ verify-data:
 	$(PYTHON) src/data/pull_history.py --verify-phase1
 
 train:
-	$(PYTHON) scripts/phase_gate.py --phase 3 --target train
+	$(PYTHON) scripts/train.py
 
 serve:
 	$(PYTHON) scripts/phase_gate.py --phase 5 --target serve
