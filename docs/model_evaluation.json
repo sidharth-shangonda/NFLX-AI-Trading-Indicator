@@ -1,0 +1,448 @@
+{
+  "artifact": {
+    "artifact_schema_version": 1,
+    "artifact_sha256": "8c10985bb689c3a3b6cbdb0597b117610d91659323d358a3036628f3be00c146",
+    "calibration_sessions": [
+      "2026-06-11",
+      "2026-06-12",
+      "2026-06-15",
+      "2026-06-16",
+      "2026-06-17",
+      "2026-06-18",
+      "2026-06-22",
+      "2026-06-23",
+      "2026-06-24",
+      "2026-06-25",
+      "2026-06-26",
+      "2026-06-29",
+      "2026-06-30",
+      "2026-07-01",
+      "2026-07-02",
+      "2026-07-06",
+      "2026-07-07",
+      "2026-07-08",
+      "2026-07-09",
+      "2026-07-10",
+      "2026-07-13",
+      "2026-07-14",
+      "2026-07-15",
+      "2026-07-16",
+      "2026-07-17",
+      "2026-07-20",
+      "2026-07-21",
+      "2026-07-22",
+      "2026-07-23",
+      "2026-07-24"
+    ],
+    "calibrator": "platt",
+    "delta": 0.05,
+    "fallback_reason": "No Phase 3 candidate beat neutral_50_50 on pooled development log loss; logistic-regression fallback uses a 0.05 minimum no-signal band.",
+    "feature_columns": [
+      "return_1",
+      "return_3",
+      "return_12",
+      "realized_vol_12",
+      "range_mean_12",
+      "atr_14",
+      "ema_fast_distance",
+      "ema_slow_distance",
+      "rsi_14",
+      "macd",
+      "macd_signal",
+      "bollinger_position_20",
+      "bollinger_width_20",
+      "relative_volume_20",
+      "time_of_day_sin",
+      "time_of_day_cos",
+      "gap_from_previous_session"
+    ],
+    "git_hash": "b7808d2b97aa2af319c24a6eb759fb8ab61fb19b",
+    "method": "logistic_regression",
+    "model_version": "model-v1",
+    "production_window": "post_split",
+    "snapshot_hash": "b9895df89c65acbf77493fbc8abb4a6afaa24688b497c427c0511cd81a1e80a9",
+    "threshold_sessions": [
+      "2026-07-28",
+      "2026-07-29",
+      "2026-07-30",
+      "2026-07-31",
+      "2026-08-03",
+      "2026-08-04",
+      "2026-08-05",
+      "2026-08-06",
+      "2026-08-07",
+      "2026-08-10",
+      "2026-08-11",
+      "2026-08-12",
+      "2026-08-13",
+      "2026-08-14",
+      "2026-08-17",
+      "2026-08-18",
+      "2026-08-19",
+      "2026-08-20",
+      "2026-08-21",
+      "2026-08-24",
+      "2026-08-25",
+      "2026-08-26",
+      "2026-08-27",
+      "2026-08-28",
+      "2026-08-31",
+      "2026-09-01",
+      "2026-09-02",
+      "2026-09-03",
+      "2026-09-04",
+      "2026-09-08",
+      "2026-09-09",
+      "2026-09-10",
+      "2026-09-11",
+      "2026-09-14",
+      "2026-09-15",
+      "2026-09-16",
+      "2026-09-17",
+      "2026-09-18",
+      "2026-09-21"
+    ],
+    "trained_through_session": "2026-06-09"
+  },
+  "baseline_metrics": {
+    "always_down": {
+      "brier": 0.48137931034482756,
+      "confusion_matrix": {
+        "true_down_pred_down": 1128,
+        "true_down_pred_up": 0,
+        "true_up_pred_down": 1047,
+        "true_up_pred_up": 0
+      },
+      "coverage": 1.0,
+      "delta": 0.05,
+      "log_loss": 6.650501463075475,
+      "samples": 2175,
+      "signal_accuracy": 0.5186206896551724,
+      "signal_balanced_accuracy": 0.5,
+      "signal_count": 2175,
+      "signal_mcc": 0.0,
+      "signal_wilson_lower_bound": 0.4976075245326274,
+      "simulated_pnl_bp": {
+        "0.0": {
+          "mean_per_signal": 0.5068040173738696,
+          "total": 1102.2987377881664
+        },
+        "1.0": {
+          "mean_per_signal": -1.4931959826261305,
+          "total": -3247.7012622118336
+        },
+        "2.0": {
+          "mean_per_signal": -3.4931959826261307,
+          "total": -7597.701262211835
+        },
+        "3.0": {
+          "mean_per_signal": -5.49319598262613,
+          "total": -11947.701262211833
+        }
+      }
+    },
+    "always_up": {
+      "brier": 0.5186206896551724,
+      "confusion_matrix": {
+        "true_down_pred_down": 0,
+        "true_down_pred_up": 1128,
+        "true_up_pred_down": 0,
+        "true_up_pred_up": 1047
+      },
+      "coverage": 1.0,
+      "delta": 0.05,
+      "log_loss": 7.1650100948743844,
+      "samples": 2175,
+      "signal_accuracy": 0.48137931034482756,
+      "signal_balanced_accuracy": 0.5,
+      "signal_count": 2175,
+      "signal_mcc": 0.0,
+      "signal_wilson_lower_bound": 0.46043180694030683,
+      "simulated_pnl_bp": {
+        "0.0": {
+          "mean_per_signal": -0.5068040173738696,
+          "total": -1102.2987377881664
+        },
+        "1.0": {
+          "mean_per_signal": -2.50680401737387,
+          "total": -5452.298737788167
+        },
+        "2.0": {
+          "mean_per_signal": -4.50680401737387,
+          "total": -9802.298737788167
+        },
+        "3.0": {
+          "mean_per_signal": -6.50680401737387,
+          "total": -14152.298737788167
+        }
+      }
+    },
+    "majority_class": {
+      "brier": 0.48137931034482756,
+      "confusion_matrix": {
+        "true_down_pred_down": 1128,
+        "true_down_pred_up": 0,
+        "true_up_pred_down": 1047,
+        "true_up_pred_up": 0
+      },
+      "coverage": 1.0,
+      "delta": 0.05,
+      "log_loss": 6.650501463075475,
+      "samples": 2175,
+      "signal_accuracy": 0.5186206896551724,
+      "signal_balanced_accuracy": 0.5,
+      "signal_count": 2175,
+      "signal_mcc": 0.0,
+      "signal_wilson_lower_bound": 0.4976075245326274,
+      "simulated_pnl_bp": {
+        "0.0": {
+          "mean_per_signal": 0.5068040173738696,
+          "total": 1102.2987377881664
+        },
+        "1.0": {
+          "mean_per_signal": -1.4931959826261305,
+          "total": -3247.7012622118336
+        },
+        "2.0": {
+          "mean_per_signal": -3.4931959826261307,
+          "total": -7597.701262211835
+        },
+        "3.0": {
+          "mean_per_signal": -5.49319598262613,
+          "total": -11947.701262211833
+        }
+      }
+    },
+    "neutral_50_50": {
+      "brier": 0.25,
+      "confusion_matrix": {
+        "true_down_pred_down": 0,
+        "true_down_pred_up": 0,
+        "true_up_pred_down": 0,
+        "true_up_pred_up": 0
+      },
+      "coverage": 0.0,
+      "delta": 0.05,
+      "log_loss": 0.6931471805599453,
+      "samples": 2175,
+      "signal_accuracy": null,
+      "signal_balanced_accuracy": null,
+      "signal_count": 0,
+      "signal_mcc": null,
+      "signal_wilson_lower_bound": 0.0,
+      "simulated_pnl_bp": {}
+    },
+    "previous_candle_direction": {
+      "brier": 0.511264367816092,
+      "confusion_matrix": {
+        "true_down_pred_down": 584,
+        "true_down_pred_up": 544,
+        "true_up_pred_down": 568,
+        "true_up_pred_up": 479
+      },
+      "coverage": 1.0,
+      "delta": 0.05,
+      "log_loss": 7.063378760202832,
+      "samples": 2175,
+      "signal_accuracy": 0.48873563218390803,
+      "signal_balanced_accuracy": 0.4876140543396533,
+      "signal_count": 2175,
+      "signal_mcc": -0.02479836227627367,
+      "signal_wilson_lower_bound": 0.46776593928156734,
+      "simulated_pnl_bp": {
+        "0.0": {
+          "mean_per_signal": -0.5463003672530299,
+          "total": -1188.20329877534
+        },
+        "1.0": {
+          "mean_per_signal": -2.5463003672530298,
+          "total": -5538.20329877534
+        },
+        "2.0": {
+          "mean_per_signal": -4.546300367253029,
+          "total": -9888.20329877534
+        },
+        "3.0": {
+          "mean_per_signal": -6.546300367253029,
+          "total": -14238.20329877534
+        }
+      }
+    },
+    "rsi_rule": {
+      "brier": 0.314367816091954,
+      "confusion_matrix": {
+        "true_down_pred_down": 109,
+        "true_down_pred_up": 172,
+        "true_up_pred_down": 108,
+        "true_up_pred_up": 171
+      },
+      "coverage": 0.2574712643678161,
+      "delta": 0.05,
+      "log_loss": 2.2932303139445986,
+      "samples": 2175,
+      "signal_accuracy": 0.5,
+      "signal_balanced_accuracy": 0.5004017908391689,
+      "signal_count": 560,
+      "signal_mcc": 0.0008247234833251985,
+      "signal_wilson_lower_bound": 0.4587287599249225,
+      "simulated_pnl_bp": {
+        "0.0": {
+          "mean_per_signal": -0.028480999883851763,
+          "total": -15.949359934956988
+        },
+        "1.0": {
+          "mean_per_signal": -2.0284809998838518,
+          "total": -1135.9493599349569
+        },
+        "2.0": {
+          "mean_per_signal": -4.028480999883852,
+          "total": -2255.949359934957
+        },
+        "3.0": {
+          "mean_per_signal": -6.028480999883852,
+          "total": -3375.949359934957
+        }
+      }
+    }
+  },
+  "breakdowns": {
+    "time_bucket": {
+      "close_15:30-16:00": {
+        "confusion_matrix": {
+          "true_down_pred_down": 0,
+          "true_down_pred_up": 0,
+          "true_up_pred_down": 0,
+          "true_up_pred_up": 0
+        },
+        "coverage": 0.0,
+        "delta": 0.05,
+        "samples": 141,
+        "signal_accuracy": null,
+        "signal_balanced_accuracy": null,
+        "signal_count": 0,
+        "signal_mcc": null,
+        "signal_wilson_lower_bound": 0.0,
+        "simulated_pnl_bp": {}
+      },
+      "midday": {
+        "confusion_matrix": {
+          "true_down_pred_down": 0,
+          "true_down_pred_up": 0,
+          "true_up_pred_down": 0,
+          "true_up_pred_up": 0
+        },
+        "coverage": 0.0,
+        "delta": 0.05,
+        "samples": 1861,
+        "signal_accuracy": null,
+        "signal_balanced_accuracy": null,
+        "signal_count": 0,
+        "signal_mcc": null,
+        "signal_wilson_lower_bound": 0.0,
+        "simulated_pnl_bp": {}
+      },
+      "open_09:30-10:00": {
+        "confusion_matrix": {
+          "true_down_pred_down": 0,
+          "true_down_pred_up": 0,
+          "true_up_pred_down": 0,
+          "true_up_pred_up": 0
+        },
+        "coverage": 0.0,
+        "delta": 0.05,
+        "samples": 173,
+        "signal_accuracy": null,
+        "signal_balanced_accuracy": null,
+        "signal_count": 0,
+        "signal_mcc": null,
+        "signal_wilson_lower_bound": 0.0,
+        "simulated_pnl_bp": {}
+      }
+    },
+    "volatility_tercile": {
+      "high": {
+        "confusion_matrix": {
+          "true_down_pred_down": 0,
+          "true_down_pred_up": 0,
+          "true_up_pred_down": 0,
+          "true_up_pred_up": 0
+        },
+        "coverage": 0.0,
+        "delta": 0.05,
+        "samples": 725,
+        "signal_accuracy": null,
+        "signal_balanced_accuracy": null,
+        "signal_count": 0,
+        "signal_mcc": null,
+        "signal_wilson_lower_bound": 0.0,
+        "simulated_pnl_bp": {}
+      },
+      "low": {
+        "confusion_matrix": {
+          "true_down_pred_down": 0,
+          "true_down_pred_up": 0,
+          "true_up_pred_down": 0,
+          "true_up_pred_up": 0
+        },
+        "coverage": 0.0,
+        "delta": 0.05,
+        "samples": 725,
+        "signal_accuracy": null,
+        "signal_balanced_accuracy": null,
+        "signal_count": 0,
+        "signal_mcc": null,
+        "signal_wilson_lower_bound": 0.0,
+        "simulated_pnl_bp": {}
+      },
+      "middle": {
+        "confusion_matrix": {
+          "true_down_pred_down": 0,
+          "true_down_pred_up": 0,
+          "true_up_pred_down": 0,
+          "true_up_pred_up": 0
+        },
+        "coverage": 0.0,
+        "delta": 0.05,
+        "samples": 725,
+        "signal_accuracy": null,
+        "signal_balanced_accuracy": null,
+        "signal_count": 0,
+        "signal_mcc": null,
+        "signal_wilson_lower_bound": 0.0,
+        "simulated_pnl_bp": {}
+      }
+    }
+  },
+  "calibration_metrics": {
+    "brier": 0.2498783203336569,
+    "log_loss": 0.6929038841551873
+  },
+  "generated_at_utc": "2026-11-07T13:43:43.182072+00:00",
+  "holdout_metrics": {
+    "brier": 0.25005068659384505,
+    "confusion_matrix": {
+      "true_down_pred_down": 0,
+      "true_down_pred_up": 0,
+      "true_up_pred_down": 0,
+      "true_up_pred_up": 0
+    },
+    "coverage": 0.0,
+    "delta": 0.05,
+    "log_loss": 0.6932485765841081,
+    "samples": 2175,
+    "signal_accuracy": null,
+    "signal_balanced_accuracy": null,
+    "signal_count": 0,
+    "signal_mcc": null,
+    "signal_wilson_lower_bound": 0.0,
+    "simulated_pnl_bp": {}
+  },
+  "holdout_sessions": [
+    "2026-09-22",
+    "2026-11-02"
+  ],
+  "threshold_metrics": {
+    "brier": 0.2500695195504746,
+    "log_loss": 0.6932857342783013
+  }
+}
