@@ -378,16 +378,17 @@ def _render_svg(summaries: pd.DataFrame, path: Path) -> None:
 def _format_summary_table(summary: pd.DataFrame) -> list[str]:
     lines = [
         (
-            "| Window | Method | OOF rows | Log loss | Brier | Accuracy | "
+            "| Window | Feature set | Method | OOF rows | Log loss | Brier | Accuracy | "
             "Signal coverage | Signal accuracy |"
         ),
-        "|---|---|---:|---:|---:|---:|---:|---:|",
+        "|---|---|---|---:|---:|---:|---:|---:|---:|",
     ]
     for _, row in summary.sort_values(["window", "log_loss", "method"]).iterrows():
         signal_accuracy = row["signal_accuracy"]
         signal_text = "n/a" if pd.isna(signal_accuracy) else f"{signal_accuracy:.2%}"
         lines.append(
-            f"| {row['window']} | {row['method']} | {int(row['samples']):,} | "
+            f"| {row['window']} | {row['feature_set']} | {row['method']} | "
+            f"{int(row['samples']):,} | "
             f"{row['log_loss']:.5f} | {row['brier']:.5f} | {row['accuracy']:.2%} | "
             f"{row['signal_coverage']:.2%} | {signal_text} |"
         )
@@ -401,7 +402,9 @@ def _write_results(
     holdout_access_count: int,
 ) -> None:
     selection = run.selections.loc[run.selections["recommendation"].notna()]
+    candidate_evidence = run.selections.loc[run.selections["recommendation"].isna()]
     ablation_summary = run.summaries.loc[run.summaries["feature_set"] != "all_features"]
+    recommendation_loss = selection.set_index("window")["pooled_log_loss"]
     lines = [
         "# Development walk-forward results",
         "",
@@ -449,6 +452,39 @@ def _write_results(
     ]
     for _, row in selection.sort_values("window").iterrows():
         lines.append(f"| {row['window']} | {row['method']} | {row['recommendation']} |")
+    if {"full_history", "post_split"}.issubset(recommendation_loss.index):
+        difference = (
+            float(recommendation_loss["post_split"])
+            - float(recommendation_loss["full_history"])
+        )
+        lines.extend(
+            [
+                "",
+                (
+                    "The provisional full-history recommendation has lower pooled log loss by "
+                    f"`{difference:.5f}` than the post-split recommendation. This small "
+                    "development-only difference does not itself adopt a training window; the "
+                    "coverage discontinuity remains an owner decision before Phase 4."
+                ),
+            ]
+        )
+    lines.extend(
+        [
+            "",
+            (
+                "| Window | Classifier | Beats every baseline pooled? | "
+                "Fold wins / folds | Eligible? |"
+            ),
+            "|---|---|---:|---:|---:|",
+        ]
+    )
+    for _, row in candidate_evidence.sort_values(["window", "pooled_log_loss"]).iterrows():
+        lines.append(
+            f"| {row['window']} | {row['method']} | "
+            f"{bool(row['beats_every_baseline_pooled'])} | "
+            f"{int(row['fold_wins_vs_best_baseline'])}/{int(row['fold_count'])} | "
+            f"{bool(row['eligible_by_rule'])} |"
+        )
     lines.extend(
         [
             "",
