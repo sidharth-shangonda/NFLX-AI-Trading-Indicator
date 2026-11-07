@@ -38,7 +38,7 @@ make serve
 
 Open `http://127.0.0.1:8000`. `make serve` uses the local paper credentials and the IEX market-data stream. It has no order-entry path. Run only one instance at a time for this Alpaca key. On a market day, confirm the banner says `LIVE-IEX`; after hours it should say `MARKET CLOSED`. An `AUTH ERROR` or `DISCONNECTED` banner means the feed is not live.
 
-To demonstrate outside market hours, run `make replay`, open the same local URL, and press **Run replay**. The banner remains `REPLAY`; these are recorded historical IEX bars, not live prices. `FEED_MODE=test make serve` is only for testing the stream connection and displays `TEST STREAM` on synthetic `FAKEPACA` data.
+To demonstrate outside market hours, run `make replay` and open the same local URL. If the replay database is empty, the dashboard automatically loads the latest five recorded sessions; **Run replay** reruns them. The banner remains `REPLAY`; these are recorded historical IEX bars, not live prices. The chart footer identifies Lightweight Charts or the built-in fallback view. If the chart area is empty, check the feed banner and the diagnostics drawer; the dashboard will say whether it is waiting for live candles, loading replay data, or cannot reach the local API. `FEED_MODE=test make serve` is only for testing the stream connection and displays `TEST STREAM` on synthetic `FAKEPACA` data.
 
 Download the prediction log with **Export CSV** or visit `/api/predictions/export.csv`. Health and model metadata are available at `/api/health` and `/api/model`.
 
