@@ -202,6 +202,31 @@ def fit_predict(
     )
 
 
+def fit_classifier(
+    method: str,
+    *,
+    train_features: pd.DataFrame,
+    train_target: pd.Series | np.ndarray,
+    seed: int,
+) -> Any:
+    """Fit one configured trained classifier for a frozen artifact.
+
+    This is intentionally separate from walk-forward prediction: a caller can
+    serialize the exact estimator it evaluates, without retraining it later.
+    """
+    if method not in CLASSIFIER_NAMES:
+        raise PredictionError(f"unknown classifier: {method}")
+    train_x = _feature_frame(train_features)
+    target = _target_array(train_target)
+    if len(train_x) != len(target):
+        raise PredictionError("train feature and target lengths differ")
+    if np.unique(target).size < 2:
+        raise PredictionError("a frozen classifier requires both target classes")
+    estimator = _classifier(method, seed=seed)
+    estimator.fit(train_x, target)
+    return estimator
+
+
 def evaluate_probabilities(
     target: pd.Series | np.ndarray,
     probabilities: np.ndarray,

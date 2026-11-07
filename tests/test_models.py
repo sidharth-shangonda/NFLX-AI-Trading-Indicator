@@ -7,6 +7,7 @@ import pytest
 from models.prediction import (
     PredictionError,
     evaluate_probabilities,
+    fit_classifier,
     fit_predict,
     method_parameters,
 )
@@ -109,3 +110,21 @@ def test_predict_rejects_schema_mismatch() -> None:
 
 def test_hgb_configuration_disables_internal_random_validation_split() -> None:
     assert method_parameters("hist_gradient_boosting")["early_stopping"] is False
+
+
+def test_frozen_classifier_requires_a_real_trained_model() -> None:
+    estimator = fit_classifier(
+        "logistic_regression",
+        train_features=_features(8),
+        train_target=pd.Series([0, 1] * 4),
+        seed=4,
+    )
+    assert estimator.predict_proba(_features(2)).shape == (2, 2)
+
+    with pytest.raises(PredictionError, match="both target classes"):
+        fit_classifier(
+            "logistic_regression",
+            train_features=_features(3),
+            train_target=pd.Series([1, 1, 1]),
+            seed=4,
+        )

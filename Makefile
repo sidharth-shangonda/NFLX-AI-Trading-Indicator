@@ -4,7 +4,7 @@ PIP := $(PYTHON) -m pip
 RUFF := $(VENV)/bin/ruff
 PYTEST := $(PYTHON) -m pytest
 
-.PHONY: setup test lint check-alpaca data data-freeze verify-data train serve replay score
+.PHONY: setup test lint check-alpaca data data-freeze verify-data train freeze-model serve replay score
 
 setup:
 	python3 -m venv $(VENV)
@@ -30,6 +30,9 @@ verify-data:
 
 train:
 	$(PYTHON) scripts/train.py
+
+freeze-model:
+	$(PYTHON) scripts/freeze_model.py
 
 serve:
 	$(PYTHON) scripts/phase_gate.py --phase 5 --target serve
