@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
-from datetime import date, time
+from datetime import date
 from typing import Any
 
 import numpy as np
 import pandas as pd
 import pandas_market_calendars as market_calendars
+
+from data.candles import build_regular_session_candles
 
 NEW_YORK = "America/New_York"
 UTC = "UTC"
@@ -139,108 +141,55 @@ def candle_diagnostics(
     min_minutes: int = 3,
     split_cutoff: date = date(2025, 11, 17),
 ) -> dict[str, Any]:
-    """Summarize regular-session five-minute grid candles without labels or features."""
-    start_utc = pd.Timestamp(start).tz_convert(UTC)
-    end_utc = pd.Timestamp(end).tz_convert(UTC)
-    timestamp_series = pd.to_datetime(frame["timestamp"], utc=True, errors="coerce")
-    valid = timestamp_series.notna()
-    bars = frame.loc[valid].copy()
-    bars["timestamp"] = pd.DatetimeIndex(timestamp_series[valid]).as_unit("ns")
-    bars = bars.sort_values("timestamp", kind="mergesort").reset_index(drop=True)
-    timestamps = pd.DatetimeIndex(bars["timestamp"])
-    first_day = start_utc.tz_convert(NEW_YORK).date().isoformat()
-    last_day = end_utc.tz_convert(NEW_YORK).date().isoformat()
-    schedule = market_calendars.get_calendar("NYSE").schedule(
-        start_date=first_day, end_date=last_day
+    """Summarize the same shared 5-minute candle grid used by the project."""
+    candle_frame = build_regular_session_candles(
+        frame,
+        start=start,
+        end=end,
+        min_minutes=min_minutes,
     )
+    if candle_frame.empty:
+        return {
+            "candle_count": 0,
+            "min_minutes": min_minutes,
+            "split_cutoff": split_cutoff.isoformat(),
+            "n_minutes_distribution": {
+                str(n_minutes): {"candles": 0, "share": None}
+                for n_minutes in range(6)
+            },
+            "filled_candles": 0,
+            "filled_share": None,
+            "below_min_minutes_by_month": {},
+            "below_min_minutes_by_split_period": {},
+            "below_min_minutes_by_time_bucket": {},
+            "below_min_minutes_by_weekday": {},
+            "nonfilled_close_to_close_pairs": 0,
+            "zero_return_pairs": 0,
+            "zero_return_rate": None,
+            "return_and_volume_by_n_minutes": {},
+        }
 
-    records: list[dict[str, Any]] = []
-    previous_session_close: float | None = None
-    five_minutes_ns = pd.Timedelta(minutes=5).value
-
-    for session_day, session in schedule.iterrows():
-        market_open = pd.Timestamp(session["market_open"]).tz_convert(UTC)
-        market_close = pd.Timestamp(session["market_close"]).tz_convert(UTC)
-        if market_open < start_utc or market_close > end_utc:
-            continue
-
-        lo = timestamps.searchsorted(market_open, side="left")
-        hi = timestamps.searchsorted(market_close, side="left")
-        session_bars = bars.iloc[lo:hi].copy()
-        candle_grid = pd.date_range(
-            market_open, market_close, freq="5min", inclusive="left"
-        )
-        if not session_bars.empty:
-            offsets = session_bars["timestamp"].array.asi8 - market_open.as_unit("ns").value
-            session_bars["_candle_index"] = offsets // five_minutes_ns
-            grouped = {
-                int(index): group.drop_duplicates("timestamp").sort_values("timestamp")
-                for index, group in session_bars.groupby("_candle_index", sort=True)
-            }
-        else:
-            grouped = {}
-
-        prior_grid_close = previous_session_close
-        prior_n_minutes: int | None = None
-        for candle_index, candle_start in enumerate(candle_grid):
-            real_bars = grouped.get(candle_index)
-            if real_bars is None or real_bars.empty:
-                n_minutes = 0
-                volume = 0.0
-                close = prior_grid_close
-                is_filled = True
-                if close is None:
-                    # Leading empty grid candles are dropped only before any close exists.
-                    continue
-            else:
-                n_minutes = min(5, int(real_bars["timestamp"].nunique()))
-                volume = float(real_bars["volume"].sum())
-                close = float(real_bars.iloc[-1]["close"])
-                is_filled = False
-
-            close_to_close_return = None
-            if candle_index > 0 and prior_grid_close is not None and prior_grid_close != 0:
-                close_to_close_return = float(close / prior_grid_close - 1.0)
-
-            candle_et = candle_start.tz_convert(NEW_YORK)
-            local_time = candle_et.time()
-            if time(9, 30) <= local_time < time(10, 0):
-                time_bucket = "open_09:30-10:00"
-            elif time(15, 30) <= local_time < time(16, 0):
-                time_bucket = "close_15:30-16:00"
-            else:
-                time_bucket = "midday"
-
-            records.append(
-                {
-                    "session_date": session_day.date(),
-                    "month": session_day.strftime("%Y-%m"),
-                    "weekday": session_day.day_name(),
-                    "split_period": (
-                        "before_2025-11-17"
-                        if session_day.date() < split_cutoff
-                        else "on_or_after_2025-11-17"
-                    ),
-                    "time_bucket": time_bucket,
-                    "candle_start_et": candle_et.isoformat(),
-                    "n_minutes": n_minutes,
-                    "is_filled": is_filled,
-                    "volume": volume,
-                    "close": float(close),
-                    "previous_n_minutes": prior_n_minutes,
-                    "close_to_close_return": close_to_close_return,
-                }
-            )
-            prior_grid_close = float(close)
-            prior_n_minutes = n_minutes
-
-        if not session_bars.empty:
-            last_real_bar = session_bars.sort_values("timestamp").iloc[-1]
-            previous_session_close = float(last_real_bar["close"])
-        elif prior_grid_close is not None:
-            previous_session_close = float(prior_grid_close)
-
-    candle_frame = pd.DataFrame.from_records(records)
+    candle_et = candle_frame["candle_start"].dt.tz_convert(NEW_YORK)
+    candle_frame["month"] = candle_et.dt.strftime("%Y-%m")
+    candle_frame["weekday"] = candle_et.dt.day_name()
+    local_minutes = candle_et.dt.hour * 60 + candle_et.dt.minute
+    candle_frame["time_bucket"] = np.select(
+        [
+            local_minutes.lt(10 * 60),
+            local_minutes.ge(15 * 60 + 30),
+        ],
+        ["open_09:30-10:00", "close_15:30-16:00"],
+        default="midday",
+    )
+    session_dates = pd.to_datetime(candle_frame["session_date"])
+    candle_frame["split_period"] = np.where(
+        session_dates.dt.date < split_cutoff,
+        "before_2025-11-17",
+        "on_or_after_2025-11-17",
+    )
+    candle_frame["close_to_close_return"] = candle_frame.groupby(
+        "session_date", sort=False
+    )["close"].pct_change(fill_method=None)
     total = len(candle_frame)
 
     def summarize(group: pd.DataFrame) -> dict[str, Any]:

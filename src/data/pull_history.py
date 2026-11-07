@@ -344,6 +344,10 @@ def _write_quality_report(
                 "Counts use complete NYSE regular sessions only. A missing minute means no "
                 "returned bar occupied that slot."
             ),
+            (
+                "Five-minute diagnostic candles use the shared "
+                "`data.candles.build_regular_session_candles` implementation."
+            ),
             "This does not establish whether the cause was no eligible IEX trade or a data gap.",
             "",
             (

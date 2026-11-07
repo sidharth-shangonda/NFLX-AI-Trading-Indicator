@@ -1,0 +1,61 @@
+{
+  "schema_version": 1,
+  "format_note": "This file is JSON-compatible YAML so Python can read it without another runtime dependency.",
+  "timezone": "America/Los_Angeles",
+  "events": [
+    {
+      "kind": "earnings",
+      "label": "Q3 2024",
+      "released_at": "2024-10-17T13:00:00-07:00",
+      "source_url": "https://ir.netflix.net/investor-news-and-events/financial-releases/press-release-details/2024/Netflix-to-Announce-Third-Quarter-2024-Financial-Results/default.aspx"
+    },
+    {
+      "kind": "earnings",
+      "label": "Q4 2024",
+      "released_at": "2025-01-21T13:00:00-08:00",
+      "source_url": "https://ir.netflix.net/investor-news-and-events/financial-releases/press-release-details/2024/Netflix-to-Announce-Fourth-Quarter-2024-Financial-Results/default.aspx"
+    },
+    {
+      "kind": "earnings",
+      "label": "Q1 2025",
+      "released_at": "2025-04-17T13:01:00-07:00",
+      "source_url": "https://ir.netflix.net/investor-news-and-events/financial-releases/press-release-details/2025/Netflix-to-Announce-First-Quarter-2025-Financial-Results/default.aspx"
+    },
+    {
+      "kind": "earnings",
+      "label": "Q2 2025",
+      "released_at": "2025-07-17T13:01:00-07:00",
+      "source_url": "https://ir.netflix.net/investor-news-and-events/financial-releases/press-release-details/2025/Netflix-to-Announce-Second-Quarter-2025-Financial-Results/"
+    },
+    {
+      "kind": "earnings",
+      "label": "Q3 2025",
+      "released_at": "2025-10-21T13:01:00-07:00",
+      "source_url": "https://ir.netflix.net/investor-news-and-events/financial-releases/press-release-details/2025/Netflix-to-Announce-Third-Quarter-2025-Financial-Results/default.aspx"
+    },
+    {
+      "kind": "earnings",
+      "label": "Q4 2025",
+      "released_at": "2026-01-20T13:01:00-08:00",
+      "source_url": "https://ir.netflix.net/investor-news-and-events/financial-releases/press-release-details/2025/Netflix-to-Announce-Fourth-Quarter-2025-Financial-Results/default.aspx"
+    },
+    {
+      "kind": "earnings",
+      "label": "Q1 2026",
+      "released_at": "2026-04-16T13:01:00-07:00",
+      "source_url": "https://ir.netflix.net/investor-news-and-events/financial-releases/press-release-details/2026/Netflix-to-Announce-First-Quarter-2026-Financial-Results/default.aspx"
+    },
+    {
+      "kind": "earnings",
+      "label": "Q2 2026",
+      "released_at": "2026-07-16T13:01:00-07:00",
+      "source_url": "https://ir.netflix.net/investor-news-and-events/financial-releases/press-release-details/2026/Netflix-to-Announce-Second-Quarter-2026-Financial-Results/default.aspx"
+    },
+    {
+      "kind": "earnings",
+      "label": "Q3 2026",
+      "released_at": "2026-10-20T13:01:00-07:00",
+      "source_url": "https://ir.netflix.net/investor-news-and-events/financial-releases/press-release-details/2026/Netflix-to-Announce-Third-Quarter-2026-Financial-Results/default.aspx"
+    }
+  ]
+}
