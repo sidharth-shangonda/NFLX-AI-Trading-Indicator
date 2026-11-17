@@ -45,26 +45,60 @@ GAP_DAYS: Final = 1
 FEATURE_FAMILIES: Final = {
     "return_and_risk": (
         "return_1",
+        "return_2",
         "return_3",
+        "return_5",
+        "return_8",
         "return_12",
+        "return_24",
+        "ret_accel_1_2",
+        "ret_accel_1_3",
+        "body_ratio",
+        "upper_shadow_ratio",
+        "lower_shadow_ratio",
+        "clv",
+        "bar_range_pct",
+        "realized_vol_6",
         "realized_vol_12",
+        "realized_vol_20",
+        "vol_ratio_6_20",
         "range_mean_12",
         "atr_14",
+        "range_to_atr",
         "gap_from_previous_session",
     ),
     "trend_and_momentum": (
+        "dist_ema_5",
+        "ema_5_slope",
+        "dist_ema_10",
+        "ema_10_slope",
         "ema_fast_distance",
         "ema_slow_distance",
+        "dist_ema_50",
+        "ema_50_slope",
+        "ema_5_20_spread",
+        "rsi_7",
+        "rsi_7_slope",
         "rsi_14",
+        "rsi_14_slope",
+        "stoch_k",
+        "stoch_d",
         "macd",
         "macd_signal",
+        "macd_hist",
+        "macd_hist_slope",
         "bollinger_position_20",
         "bollinger_width_20",
     ),
     "activity_and_time": (
         "relative_volume_20",
+        "clv_vol",
+        "vol_direction",
+        "vwap_dist",
         "time_of_day_sin",
         "time_of_day_cos",
+        "is_morning",
+        "is_power_hour",
     ),
 }
 
@@ -226,8 +260,7 @@ def _pooled_summaries(
     feature_set: str,
 ) -> pd.DataFrame:
     subset = oof_predictions.loc[
-        (oof_predictions["window"] == window)
-        & (oof_predictions["feature_set"] == feature_set)
+        (oof_predictions["window"] == window) & (oof_predictions["feature_set"] == feature_set)
     ]
     summaries: list[dict[str, Any]] = []
     for method, prediction_rows in subset.groupby("method", sort=True):
@@ -265,8 +298,7 @@ def _selection_summary(summaries: pd.DataFrame, fold_records: pd.DataFrame) -> p
             "log_loss"
         ]
         per_fold = fold_records.loc[
-            (fold_records["window"] == window)
-            & (fold_records["feature_set"] == "all_features")
+            (fold_records["window"] == window) & (fold_records["feature_set"] == "all_features")
         ]
         baseline_by_fold = (
             per_fold.loc[per_fold["method"].isin(BASELINE_NAMES)]
@@ -453,9 +485,8 @@ def _write_results(
     for _, row in selection.sort_values("window").iterrows():
         lines.append(f"| {row['window']} | {row['method']} | {row['recommendation']} |")
     if {"full_history", "post_split"}.issubset(recommendation_loss.index):
-        difference = (
-            float(recommendation_loss["post_split"])
-            - float(recommendation_loss["full_history"])
+        difference = float(recommendation_loss["post_split"]) - float(
+            recommendation_loss["full_history"]
         )
         lines.extend(
             [
@@ -490,32 +521,32 @@ def _write_results(
             "",
             "## Feature-family ablations",
             "",
-        (
-            "Ablations rerun the window's provisional recommendation after removing one causal "
-            "feature family. They are diagnostics only, not a license to change the approved "
-            "feature schema after model freeze."
-        ),
+            (
+                "Ablations rerun the window's provisional recommendation after removing one causal "
+                "feature family. They are diagnostics only, not a license to change the approved "
+                "feature schema after model freeze."
+            ),
             "",
-        *_format_summary_table(ablation_summary),
+            *_format_summary_table(ablation_summary),
             "",
             "## Protocol notes",
             "",
-        (
-            "- HistGradientBoostingClassifier runs with `early_stopping=False`; it therefore "
-            "does not create sklearn's internal random validation split."
-        ),
-        (
-            "- Logistic regression scales within each fold only. All labels, model fitting, "
-            "thresholds, and selection remain chronological; no random split was used."
-        ),
-        (
-            "- The optional two-candle-horizon ablation was not run. It is not a candidate "
-            "for the shipped next-candle target."
-        ),
-        (
-            "- These figures do not use calibration, threshold tuning, or the final holdout. "
-            "Phase 4 performs those locked steps once a training window is approved."
-        ),
+            (
+                "- HistGradientBoostingClassifier runs with `early_stopping=False`; it therefore "
+                "does not create sklearn's internal random validation split."
+            ),
+            (
+                "- Logistic regression scales within each fold only. All labels, model fitting, "
+                "thresholds, and selection remain chronological; no random split was used."
+            ),
+            (
+                "- The optional two-candle-horizon ablation was not run. It is not a candidate "
+                "for the shipped next-candle target."
+            ),
+            (
+                "- These figures do not use calibration, threshold tuning, or the final holdout. "
+                "Phase 4 performs those locked steps once a training window is approved."
+            ),
             "",
         ]
     )

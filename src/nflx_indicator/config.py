@@ -26,6 +26,7 @@ class Settings:
     adjustment: str = "split"
     min_minutes: int = 3
     finalization_grace_seconds: int = 35
+    prediction_delta: float | None = None
     log_level: str = "INFO"
     alpaca_key_id: str | None = field(default=None, repr=False)
     alpaca_secret_key: str | None = field(default=None, repr=False)
@@ -49,9 +50,7 @@ class Settings:
 
         try:
             min_minutes = int(environment.get("MIN_MINUTES", data.get("min_minutes", 3)))
-            finalization_grace_seconds = int(
-                live.get("finalization_grace_seconds", 35)
-            )
+            finalization_grace_seconds = int(live.get("finalization_grace_seconds", 35))
         except (TypeError, ValueError) as exc:
             raise ConfigurationError("numeric configuration value is invalid") from exc
 
@@ -60,12 +59,23 @@ class Settings:
         if finalization_grace_seconds < 0:
             raise ConfigurationError("finalization grace must not be negative")
 
+        prediction_delta_raw = environment.get("PREDICTION_DELTA")
+        prediction_delta: float | None = None
+        if prediction_delta_raw:
+            try:
+                prediction_delta = float(prediction_delta_raw)
+            except (TypeError, ValueError) as exc:
+                raise ConfigurationError("PREDICTION_DELTA must be a valid float") from exc
+            if not 0.0 <= prediction_delta <= 0.5:
+                raise ConfigurationError("PREDICTION_DELTA must be between 0.0 and 0.5")
+
         return cls(
             symbol=str(market_data.get("symbol", "NFLX")),
             feed=str(market_data.get("feed", "iex")),
             adjustment=str(market_data.get("adjustment", "split")),
             min_minutes=min_minutes,
             finalization_grace_seconds=finalization_grace_seconds,
+            prediction_delta=prediction_delta,
             log_level=environment.get("LOG_LEVEL", "INFO").upper(),
             alpaca_key_id=environment.get("APCA_API_KEY_ID"),
             alpaca_secret_key=environment.get("APCA_API_SECRET_KEY"),

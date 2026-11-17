@@ -32,9 +32,7 @@ def main() -> int:
     except ValueError as exc:
         parser.error(str(exc))
     start = pd.Timestamp(args.start, tz="America/New_York").tz_convert("UTC")
-    end = (
-        pd.Timestamp(args.end, tz="America/New_York") + pd.Timedelta(days=1)
-    ).tz_convert("UTC")
+    end = (pd.Timestamp(args.end, tz="America/New_York") + pd.Timedelta(days=1)).tz_convert("UTC")
     if end <= start:
         parser.error("--end must be on or after --start")
     from alpaca.data.historical import StockHistoricalDataClient

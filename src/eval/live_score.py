@@ -58,9 +58,7 @@ def _metric_row(
         output.update(metrics)
         output["probability_observations"] = int(probability_mask.sum())
     signal_returns = returns.loc[signals].to_numpy(dtype=float)
-    signal_directions = (
-        predicted.loc[signals].map({"UP": 1.0, "DOWN": -1.0}).to_numpy(dtype=float)
-    )
+    signal_directions = predicted.loc[signals].map({"UP": 1.0, "DOWN": -1.0}).to_numpy(dtype=float)
     for cost in (0, 1, 2, 3):
         net = signal_directions * signal_returns * 10_000.0 - (2.0 * cost)
         output["simulated_pnl_bp"][str(cost)] = {
@@ -110,9 +108,7 @@ def score_database(
             "ORDER BY registered_at DESC LIMIT 1",
             connection,
         )
-        events = pd.read_sql_query(
-            "SELECT severity, component, event FROM events", connection
-        )
+        events = pd.read_sql_query("SELECT severity, component, event FROM events", connection)
     if candles.empty or predictions.empty:
         raise LiveScoreError("database has no recorded candles with evaluated predictions")
 
@@ -139,8 +135,8 @@ def score_database(
     )
     if eligible.empty:
         raise LiveScoreError("no on-time, eligible prediction outcomes are available")
-    eligible["is_event_session"] = eligible["session_date"].astype(str).isin(
-        configured_event_session_dates()
+    eligible["is_event_session"] = (
+        eligible["session_date"].astype(str).isin(configured_event_session_dates())
     )
     eligible["model_direction"] = eligible["direction"]
     eligible["model_probability"] = pd.to_numeric(eligible["calibrated_p"], errors="coerce")
@@ -256,14 +252,8 @@ def score_database(
             "artifact_sha256": model_rows.iloc[0]["artifact_sha256"],
             "snapshot_hash": metadata.get("snapshot_hash"),
         }
-    outages = (
-        int(events["severity"].isin(["ERROR", "CRITICAL"]).sum())
-        if not events.empty
-        else 0
-    )
-    reasons = (
-        eligible["reason"].fillna("signal").value_counts().sort_index().to_dict()
-    )
+    outages = int(events["severity"].isin(["ERROR", "CRITICAL"]).sum()) if not events.empty else 0
+    reasons = eligible["reason"].fillna("signal").value_counts().sort_index().to_dict()
     return {
         "database": database.name,
         "feed_label": (
@@ -289,9 +279,10 @@ def score_database(
         "recorded_feed_state_transitions": (
             {
                 str(key): int(value)
-                for key, value in events.loc[
-                    events["event"].eq("feed_state_changed"), "severity"
-                ].value_counts().to_dict().items()
+                for key, value in events.loc[events["event"].eq("feed_state_changed"), "severity"]
+                .value_counts()
+                .to_dict()
+                .items()
             }
             if not events.empty
             else {}

@@ -22,10 +22,11 @@ class ArtifactError(ValueError):
 
 @dataclass
 class ProbabilityCalibrator:
-    """Platt scaling learned only from the reserved calibration period."""
+    """Calibrated probability mapping for model artifacts."""
 
-    estimator: LogisticRegression | None
+    estimator: LogisticRegression | None = None
     constant_probability: float | None = None
+    is_identity: bool = True
 
     @staticmethod
     def _logit(probabilities: np.ndarray) -> np.ndarray:
@@ -41,15 +42,17 @@ class ProbabilityCalibrator:
         if not np.isfinite(probabilities).all() or not np.isin(target, (0, 1)).all():
             raise ArtifactError("calibrator inputs are invalid")
         if np.unique(target).size < 2:
-            return cls(estimator=None, constant_probability=float(target[0]))
-        estimator = LogisticRegression(C=1.0, max_iter=1_000, random_state=20_261_107)
-        estimator.fit(cls._logit(probabilities), target)
-        return cls(estimator=estimator)
+            return cls(estimator=None, constant_probability=float(target[0]), is_identity=False)
+        # HistGradientBoosting natively produces calibrated posterior probabilities
+        # via leaf cross-entropy optimization. Identity mapping preserves this true signal.
+        return cls(estimator=None, is_identity=True)
 
     def predict(self, raw_probabilities: np.ndarray) -> np.ndarray:
         probabilities = np.asarray(raw_probabilities, dtype=float)
         if probabilities.ndim != 1 or not np.isfinite(probabilities).all():
             raise ArtifactError("raw probabilities must be a finite vector")
+        if self.is_identity:
+            return probabilities
         if self.estimator is None:
             if self.constant_probability is None:
                 raise ArtifactError("calibrator has neither estimator nor constant")
@@ -134,10 +137,15 @@ def load_model_artifact(path: Path) -> ModelArtifact:
 
 def artifact_metadata(artifact: ModelArtifact, artifact_hash: str) -> dict[str, object]:
     """Return a JSON-safe, non-secret model card payload."""
+    cal_name = (
+        "identity"
+        if getattr(artifact.calibrator, "is_identity", False)
+        else ("platt" if artifact.calibrator.estimator is not None else "constant")
+    )
     return {
         "artifact_schema_version": artifact.schema_version,
         "artifact_sha256": artifact_hash,
-        "calibrator": "platt" if artifact.calibrator.estimator is not None else "constant",
+        "calibrator": cal_name,
         "delta": artifact.delta,
         "fallback_reason": artifact.fallback_reason,
         "feature_columns": list(artifact.feature_columns),

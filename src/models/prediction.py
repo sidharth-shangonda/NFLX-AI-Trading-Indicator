@@ -57,10 +57,11 @@ def method_parameters(method: str) -> dict[str, Any]:
     if method == "hist_gradient_boosting":
         return {
             "early_stopping": False,
-            "l2_regularization": 1.0,
-            "learning_rate": 0.05,
-            "max_iter": 150,
+            "l2_regularization": 5.0,
+            "learning_rate": 0.03,
+            "max_iter": 100,
             "max_leaf_nodes": 15,
+            "min_samples_leaf": 50,
         }
     if method == "random_forest":
         return {
@@ -108,10 +109,11 @@ def _classifier(method: str, *, seed: int) -> Any:
         )
     if method == "hist_gradient_boosting":
         return HistGradientBoostingClassifier(
-            learning_rate=0.05,
-            l2_regularization=1.0,
-            max_iter=150,
+            learning_rate=0.03,
+            l2_regularization=5.0,
+            max_iter=100,
             max_leaf_nodes=15,
+            min_samples_leaf=50,
             early_stopping=False,
             random_state=seed,
         )

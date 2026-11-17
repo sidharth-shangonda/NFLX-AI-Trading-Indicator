@@ -14,9 +14,7 @@ def test_min_minutes_comes_from_project_config() -> None:
 
 
 def test_min_minutes_can_be_overridden_with_valid_value() -> None:
-    settings = Settings.from_env(
-        {"MIN_MINUTES": "4"}, {"data": {"min_minutes": 3}}
-    )
+    settings = Settings.from_env({"MIN_MINUTES": "4"}, {"data": {"min_minutes": 3}})
 
     assert settings.min_minutes == 4
 

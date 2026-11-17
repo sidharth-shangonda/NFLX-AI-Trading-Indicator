@@ -42,9 +42,7 @@ def attach_next_candle_labels(
     technical_prediction_eligible = result["n_minutes"].ge(min_minutes) & ~result[
         "is_filled"
     ].astype(bool)
-    result["prediction_eligible"] = technical_prediction_eligible & ~result[
-        "is_event_session"
-    ]
+    result["prediction_eligible"] = technical_prediction_eligible & ~result["is_event_session"]
     result["prediction_gate_reason"] = None
     result.loc[~technical_prediction_eligible, "prediction_gate_reason"] = (
         "thin_data_n_minutes_" + result.loc[~technical_prediction_eligible, "n_minutes"].astype(str)
@@ -74,13 +72,11 @@ def attach_next_candle_labels(
     result.loc[result["target"].eq("DOWN"), "target_up"] = 0
 
     result["label_reason"] = None
-    result.loc[~technical_prediction_eligible, "label_reason"] = (
-        "thin_data_at_t"
-    )
+    result.loc[~technical_prediction_eligible, "label_reason"] = "thin_data_at_t"
     result.loc[technical_prediction_eligible & ~has_next, "label_reason"] = "session_boundary"
-    result.loc[
-        technical_prediction_eligible & has_next & ~next_has_real_close, "label_reason"
-    ] = "next_candle_no_real_close"
+    result.loc[technical_prediction_eligible & has_next & ~next_has_real_close, "label_reason"] = (
+        "next_candle_no_real_close"
+    )
     result.loc[
         technical_prediction_eligible & has_next & next_has_real_close & ~nonzero_return,
         "label_reason",

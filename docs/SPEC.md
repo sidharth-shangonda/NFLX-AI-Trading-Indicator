@@ -1,14 +1,14 @@
 # SPEC - NFLX AI Trading Indicator
 
 ## 0. Goal
-A live candlestick web app for NFLX. On every candle it shows a direction (UP / DOWN / NO CLEAR SIGNAL) and a calibrated confidence from a trained model, readable in one second, never repainting. Evaluated by running live for 5 US trading days and checking each signal against what price did next, versus simple baselines.
+A live candlestick web app for NFLX. On every candle it shows a direction (UP / DOWN / NO CLEAR SIGNAL) and a calibrated confidence from a trained model, readable in one second, never repainting. Evaluated by running live on a 1-day timeframe (1 US trading session, 78 candles) per TA instruction (previously 5 days), checking each signal against what price did next, versus simple baselines.
 
 ## 1. Instructor requirements (every one must be traceable to code, a test and a deliverable)
 R1 Indicator is driven by a model trained on historical market data.
 R2 Works on the live market; chart updates with every new candle.
 R3 On every candle: direction (UP/DOWN/NO CLEAR SIGNAL), confidence (e.g. "UP, 54%"), clear visual.
 R4 NO REPAINTING: a signal on a closed candle never changes. Repainting, no signals, or inability to run live = ZERO on the live test.
-R5 Live test: 5 trading days, no changes during the test; signals checked against actual price over the stated horizon; compared with baselines (always UP, basic RSI rule).
+R5 Live test: 1 US trading day timeframe (adjusted from 5 days per TA instruction, 10 Nov 2026), no changes during the test; signals checked against actual price over the stated horizon; compared with baselines (always UP, basic RSI rule).
 R6 Marking: live performance 40 (accuracy of confident signals, simulated profit after costs), model quality + honest validation 20, usefulness to a trader 20, report + demo 20.
 R7 Every result reproducible from the repo; every choice justified with evidence; sources cited; our own trained model (a copied public indicator scores zero).
 R8 Paper trading only. One asset only (NFLX).
@@ -30,7 +30,7 @@ Data provider: Alpaca Markets Basic market-data plan, feed = IEX. These current 
 - The installed `pandas_market_calendars` 5.6.0 package supplies NYSE schedules including holidays and early closes; actual expected session grids are checked against that package.
 - Lightweight Charts current docs are v5.2. The license requires the NOTICE attribution text and a TradingView link. `attributionLogo` satisfies the link requirement; it does not replace the NOTICE text. v5 uses `createSeriesMarkers` and series `.update` for the last bar.
 
-Status of the original a-h checks (details in `docs/unverified_results.md`): a) PASS, 147,124 rows span 2024-10-01 through 2026-11-02; b) PASS, the pre-split adjusted/raw close factor was approximately 0.1 and the post-split factor was 1.0; c) VERIFIED, the first bar in the latest complete session was 09:30 ET and the official docs define the interval-start convention; d) official aggregation behavior is VERIFIED, but a particular missing historical IEX minute cannot be attributed to no eligible trade from this dataset alone; e) live-recorded bars equal next-day REST bars remains UNVERIFIED until Phase 7; f) display permission for this private evaluator demo or derived signals remains UNVERIFIED; g) SDK run-loop behavior is verified from pinned 0.44.0 source; use a thread/process; h) `HistGradientBoostingClassifier` auto early stopping uses `train_test_split` above 10,000 samples in scikit-learn 1.9.1; always set `early_stopping=False`.
+Status of the original a-h checks (details in `docs/unverified_results.md`): a) PASS, 147,124 rows span 2024-10-01 through 2026-11-02; b) PASS, the pre-split adjusted/raw close factor was approximately 0.1 and the post-split factor was 1.0; c) VERIFIED, the first bar in the latest complete session was 09:30 ET and the official docs define the interval-start convention; d) official aggregation behavior is VERIFIED, but a particular missing historical IEX minute cannot be attributed to no eligible trade from this dataset alone; e) live-recorded bars equal next-day REST bars is PASS / VERIFIED with 0 differences across 221 common bars (`docs/live_vs_history.md`); f) display permission for this private evaluator demo or derived signals remains UNVERIFIED; g) SDK run-loop behavior is verified from pinned 0.44.0 source; use a thread/process; h) `HistGradientBoostingClassifier` auto early stopping uses `train_test_split` above 10,000 samples in scikit-learn 1.9.1; always set `early_stopping=False`.
 
 Phase 0 records the installed versions of `alpaca-py`, `scikit-learn`, `pandas`, and `pandas-market-calendars` in `docs/evidence/versions.md`.
 
@@ -72,7 +72,7 @@ Plain HTML/JS + Lightweight Charts v5 with attributionLogo enabled. Candles + ar
 Parsing; timestamp/timezone normalization incl. the 1 Nov 2026 DST change and an early-close day; session-grid candle counts and gap/fill behavior (including `n_minutes`, `is_filled`, and `MIN_MINUTES`); missing/duplicate/out-of-order candles; feature correctness; no-look-ahead (altering future rows must not change feature at t); historical-vs-live feature equality; model input schema and inference; calibration; persistence; finalization; ATTEMPTS TO UPDATE/DELETE A FINAL PREDICTION MUST FAIL; restart creates no duplicates; reconnect + backfill; API error/auth/rate-limit handling; stale-feed banner; outcome scoring vs a hand-computed example; holdout single-touch guard. Synthetic data only in unit tests, never shown in the UI as live.
 
 ## 7. Live evaluation protocol
-Freeze git tag release-v1 + model hash before the test. No edits during the 5 days. Score only on-time predictions; baselines computed on the same candles; report outages; simulated P&L reported separately from accuracy; report accuracy with and without event sessions.
+Freeze git tag release-v1 + model hash before the test. No edits during the evaluation (1 US trading day timeframe per TA instruction, 10 Nov 2026). Score only on-time predictions; baselines computed on the same candles; report outages; simulated P&L reported separately from accuracy; report accuracy with and without event sessions.
 
 ## 8. Sources to re-verify against
 docs.alpaca.markets/docs/paper-trading ; docs.alpaca.markets/us/docs/streaming-market-data ; alpaca.markets/docs/real-time-stock-pricing-data ; docs.alpaca.markets/us/reference/stockbars ; alpaca.markets/sdks/python ; finnhub.io/docs/api ; sec.gov 8-K ex99.1 (NFLX 10-for-1 split, 30 Oct 2025) ; scikit-learn TimeSeriesSplit and CalibratedClassifierCV docs ; tradingview.github.io/lightweight-charts ; pandas-market-calendars docs. Papers: Nabipour et al. 2020 IEEE Access 8:150199 (cautionary: random 30% test split); Fischer & Krauss 2018 EJOR 270(2):654-669 (LSTM edge fades after 2010, ~zero after costs); Lopez de Prado, Advances in Financial Machine Learning, ch. 7 (purging/embargo).

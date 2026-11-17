@@ -27,7 +27,7 @@ This is a data-only paper-account workflow. It does not place, modify, or cancel
    ```
 
 3. Review `docs/live_vs_history.md`, the CSV export, event log counts, and the insert-only prediction ledger. Keep every prediction row intact.
-4. Repeat until at least three market days of live soak are complete. Fix bugs only. Do not tune the model or threshold.
+4. Complete the 1-day live market evaluation (78 candles, 09:30–16:00 ET) per TA instruction. Fix bugs only. Do not tune the model or threshold.
 
 ## Soak log
 
@@ -35,4 +35,4 @@ This is a data-only paper-account workflow. It does not place, modify, or cancel
 |---|---|---|---|---|---|
 | pending | pending | pending | pending | no soak run yet | |
 
-Do not create `release-v1` until the three-day soak, bar comparison, runbook restart, and no-repaint checks pass. The five-day no-change evaluation starts only after that tag.
+Do not create `release-v1` until the live bar comparison, runbook restart, and no-repaint checks pass. The 1-day live evaluation starts once live paper mode is launched.

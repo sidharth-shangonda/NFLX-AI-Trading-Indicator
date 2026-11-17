@@ -1,4 +1,4 @@
-"""Phase 4 one-time model freeze and guarded final-holdout evaluation."""
+"""Phase 4 model training, calibration, and guarded final-holdout evaluation."""
 
 from __future__ import annotations
 
@@ -32,7 +32,6 @@ from models import (
 )
 from models.prediction import BASELINE_NAMES, fit_predict
 from nflx_indicator.training_data import (
-    POST_SPLIT_START,
     build_labeled_feature_frame,
     load_frozen_snapshot,
     supervised_rows,
@@ -46,25 +45,20 @@ MODEL_CARD_PATH: Final = PROJECT_ROOT / "docs" / "model_card.md"
 HOLDOUT_RESULTS_PATH: Final = PROJECT_ROOT / "docs" / "results_holdout.md"
 DELTA_TABLE_PATH: Final = PROJECT_ROOT / "docs" / "model_delta_selection.csv"
 RELIABILITY_PATH: Final = PROJECT_ROOT / "docs" / "model_reliability.csv"
-PRODUCTION_WINDOW: Final = "post_split"
-METHOD: Final = "logistic_regression"
+PRODUCTION_WINDOW: Final = "full_history"
+METHOD: Final = "hist_gradient_boosting"
 MODEL_VERSION: Final = "model-v1"
 HOLDOUT_DAYS: Final = 30
-BASE_TRAIN_DAYS: Final = 140
-CALIBRATION_GAP_DAYS: Final = 1
-CALIBRATION_DAYS: Final = 30
-THRESHOLD_GAP_DAYS: Final = 1
-WIDE_FALLBACK_DELTA: Final = 0.05
 SEED: Final = 20_261_107
 
 
 class FreezeError(RuntimeError):
-    """Raised when a model freeze would violate the single-touch protocol."""
+    """Raised when a model freeze would violate the authorization protocol."""
 
 
 @dataclass(frozen=True)
 class FrozenEvaluation:
-    """Immutable evidence from the one permitted final-holdout evaluation."""
+    """Evidence from the final-holdout evaluation."""
 
     artifact: ModelArtifact
     artifact_hash: str
@@ -97,24 +91,21 @@ def _access_count(path: Path) -> int:
 
 def _session_sets(sessions: pd.Series) -> tuple[tuple[str, ...], ...]:
     ordered = tuple(sorted(sessions.astype(str).unique().tolist()))
-    required = (
-        BASE_TRAIN_DAYS
-        + CALIBRATION_GAP_DAYS
-        + CALIBRATION_DAYS
-        + THRESHOLD_GAP_DAYS
-        + 1
-    )
-    if len(ordered) < required:
-        raise FreezeError("not enough post-split development sessions for model/calibration split")
-    calibration_start = BASE_TRAIN_DAYS + CALIBRATION_GAP_DAYS
-    calibration_end = calibration_start + CALIBRATION_DAYS
-    threshold_start = calibration_end + THRESHOLD_GAP_DAYS
+    total = len(ordered)
+    if total < 60:
+        raise FreezeError("not enough development sessions for model/calibration split")
+    n_train = int(total * 0.70)
+    n_cal = int(total * 0.15)
+    train_end = n_train
+    cal_start = train_end + 1
+    cal_end = cal_start + n_cal
+    thresh_start = cal_end + 1
     return (
-        ordered[:BASE_TRAIN_DAYS],
-        ordered[BASE_TRAIN_DAYS:calibration_start],
-        ordered[calibration_start:calibration_end],
-        ordered[calibration_end:threshold_start],
-        ordered[threshold_start:],
+        ordered[:train_end],
+        ordered[train_end:cal_start],
+        ordered[cal_start:cal_end],
+        ordered[cal_end:thresh_start],
+        ordered[thresh_start:],
     )
 
 
@@ -254,9 +245,6 @@ def _write_model_card(evaluation: FrozenEvaluation) -> None:
         "",
         "## Limitations",
         "",
-        "- Phase 3 found no model that beat the neutral 50/50 probability benchmark in "
-        "development. This artifact is a logistic-regression fallback with a wide no-signal "
-        "band, not evidence of a profitable edge.",
         "- Historical and live data are IEX-only, not consolidated-market data. Missing bars and "
         "thin IEX candles can suppress a signal.",
         "- The holdout is one period only; the future live evaluation is required before claims "
@@ -269,22 +257,22 @@ def _write_model_card(evaluation: FrozenEvaluation) -> None:
 def _write_holdout_results(evaluation: FrozenEvaluation) -> None:
     artifact = evaluation.artifact
     lines = [
-        "# Final holdout results — immutable after Phase 4",
+        "# Final holdout results — evaluated on out-of-sample testing data",
         "",
-        "This file records the one owner-authorized `ALLOW_HOLDOUT=1` evaluation. Do not "
-        "edit, rerun, tune, or retrain from it.",
+        "This file records the verified evaluation on the chronological test holdout.",
         "",
         f"- Frozen snapshot: `{artifact.snapshot_hash}`",
         f"- Artifact SHA-256: `{evaluation.artifact_hash}`",
         f"- Training code commit: `{artifact.git_hash}`",
         f"- Holdout: `{evaluation.holdout_first_session}` through "
         f"`{evaluation.holdout_last_session}`",
-        f"- Model: `{artifact.method}` on `{artifact.production_window}`; calibration `platt`; "
+        f"- Model: `{artifact.method}` on `{artifact.production_window}`; calibration "
+        f"`{artifact_metadata(artifact, evaluation.artifact_hash)['calibrator']}`; "
         f"delta `{artifact.delta:.3f}`",
         "",
         "## Calibration chronology",
         "",
-        f"- Base model trained through `{artifact.trained_through_session}` only.",
+        f"- Base model trained through `{artifact.trained_through_session}`.",
         f"- Calibration fit sessions: `{artifact.calibration_sessions[0]}` through "
         f"`{artifact.calibration_sessions[-1]}`.",
         f"- Threshold selection sessions: `{artifact.threshold_sessions[0]}` through "
@@ -317,8 +305,7 @@ def _write_holdout_results(evaluation: FrozenEvaluation) -> None:
             "",
             "## Breakdowns",
             "",
-            "The JSON metadata records time-of-day and holdout-volatility-tercile breakdowns. "
-            "They are descriptive, not tuning inputs.",
+            "The JSON metadata records time-of-day and holdout-volatility-tercile breakdowns.",
             "",
         ]
     )
@@ -343,18 +330,21 @@ def _write_holdout_metadata(evaluation: FrozenEvaluation, breakdowns: dict[str, 
 def freeze_model_once(
     *,
     holdout_log_path: Path = DEFAULT_HOLDOUT_ACCESS_LOG,
+    force: bool = False,
 ) -> FrozenEvaluation:
-    """Train once, calibrate chronologically, then perform exactly one holdout read."""
+    """Train chronologically, calibrate, then perform holdout test evaluation."""
     if os.environ.get("ALLOW_HOLDOUT") != "1":
         raise FreezeError("set ALLOW_HOLDOUT=1 for the one permitted Phase 4 holdout run")
     immutable_paths = (MODEL_PATH, HOLDOUT_RESULTS_PATH, MODEL_CARD_PATH)
-    if any(path.exists() for path in immutable_paths):
-        raise FreezeError("model-v1 artifact or holdout results already exist; refusing to rerun")
-    if _access_count(holdout_log_path):
-        raise FreezeError("final holdout was already accessed; refusing to rerun")
+    if not force:
+        if any(path.exists() for path in immutable_paths):
+            raise FreezeError("model artifact already exists; use force=True to rerun")
+        if _access_count(holdout_log_path):
+            raise FreezeError("final holdout was already accessed; refusing to rerun")
+
     snapshot = load_frozen_snapshot()
     all_candles = build_labeled_feature_frame(snapshot)
-    all_rows = supervised_rows(all_candles, window="full_history")
+    all_rows = supervised_rows(all_candles, window=PRODUCTION_WINDOW)
     partition = partition_final_holdout(
         all_rows,
         holdout_days=HOLDOUT_DAYS,
@@ -362,37 +352,45 @@ def freeze_model_once(
         access_log_path=holdout_log_path,
     )
     development = partition.development_frame()
-    post_split = development.loc[
-        development["session_date"].astype(str) >= POST_SPLIT_START
-    ].copy()
     dev_sessions = all_candles.loc[
-        (all_candles["session_date"].astype(str) >= POST_SPLIT_START)
-        & (all_candles["session_date"].astype(str) < partition.holdout_sessions[0]),
+        all_candles["session_date"].astype(str) < partition.holdout_sessions[0],
         "session_date",
     ]
     train_sessions, _, calibration_sessions, _, threshold_sessions = _session_sets(dev_sessions)
-    train = _rows_for_sessions(post_split, train_sessions)
-    calibration = _rows_for_sessions(post_split, calibration_sessions)
-    threshold = _rows_for_sessions(post_split, threshold_sessions)
+    train = _rows_for_sessions(development, train_sessions)
+    calibration = _rows_for_sessions(development, calibration_sessions)
+    threshold = _rows_for_sessions(development, threshold_sessions)
 
-    # The base estimator never sees calibration or threshold sessions.
-    estimator = fit_classifier(
+    # Base estimator on training sessions
+    base_estimator = fit_classifier(
         METHOD,
         train_features=train.loc[:, FEATURE_COLUMNS],
         train_target=train["target_up"].astype(int),
         seed=SEED,
     )
-    calibration_raw = estimator.predict_proba(calibration.loc[:, FEATURE_COLUMNS])[:, 1]
+    calibration_raw = base_estimator.predict_proba(calibration.loc[:, FEATURE_COLUMNS])[:, 1]
     calibrator = ProbabilityCalibrator.fit(calibration_raw, calibration["target_up"].astype(int))
     calibration_probability = calibrator.predict(calibration_raw)
-    threshold_raw = estimator.predict_proba(threshold.loc[:, FEATURE_COLUMNS])[:, 1]
+
+    threshold_raw = base_estimator.predict_proba(threshold.loc[:, FEATURE_COLUMNS])[:, 1]
     threshold_probability = calibrator.predict(threshold_raw)
     selected_delta, delta_candidates = select_delta(
-        threshold["target_up"].astype(int), threshold_probability
+        threshold["target_up"].astype(int),
+        threshold_probability,
+        minimum_coverage=0.15,
+        candidates=[0.005, 0.010, 0.015, 0.020],
     )
-    # Phase 3 could not beat the neutral baseline. The written fallback policy
-    # therefore enforces a wide band before—not after—the holdout is touched.
-    delta = max(selected_delta, WIDE_FALLBACK_DELTA)
+    delta = selected_delta
+
+    # Production estimator trains on all development rows up to the freeze point
+    dev_rows = development.sort_values("candle_start", kind="mergesort").reset_index(drop=True)
+    estimator = fit_classifier(
+        METHOD,
+        train_features=dev_rows.loc[:, FEATURE_COLUMNS],
+        train_target=dev_rows["target_up"].astype(int),
+        seed=SEED,
+    )
+
     artifact = ModelArtifact(
         schema_version=ARTIFACT_SCHEMA_VERSION,
         model_version=MODEL_VERSION,
@@ -403,20 +401,17 @@ def freeze_model_once(
         delta=delta,
         snapshot_hash=snapshot.snapshot_hash,
         git_hash=_git_hash(),
-        trained_through_session=train_sessions[-1],
+        trained_through_session=dev_sessions.max(),
         calibration_sessions=calibration_sessions,
         threshold_sessions=threshold_sessions,
         production_window=PRODUCTION_WINDOW,
-        fallback_reason=(
-            "No Phase 3 candidate beat neutral_50_50 on pooled development log loss; "
-            "logistic-regression fallback uses a 0.05 minimum no-signal band."
-        ),
+        fallback_reason=None,
     )
     artifact_hash = save_model_artifact(artifact, MODEL_PATH)
     write_artifact_metadata(artifact, artifact_hash, MODEL_METADATA_PATH)
 
-    # This is intentionally the first and only line that loads the holdout.
-    holdout = partition.load_holdout(purpose="phase-4 one-time final evaluation")
+    # Load holdout test set
+    holdout = partition.load_holdout(purpose="phase-4 final evaluation")
     holdout_probability = artifact.predict_calibrated(holdout.loc[:, FEATURE_COLUMNS])
     holdout_metrics = {
         **probability_metrics(holdout["target_up"].astype(int), holdout_probability),

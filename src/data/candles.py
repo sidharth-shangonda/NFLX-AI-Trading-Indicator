@@ -71,9 +71,7 @@ def _normalize_minute_bars(bars: pd.DataFrame) -> pd.DataFrame:
         if column not in normalized:
             normalized[column] = np.nan
 
-    normalized["timestamp"] = pd.to_datetime(
-        normalized["timestamp"], utc=True, errors="coerce"
-    )
+    normalized["timestamp"] = pd.to_datetime(normalized["timestamp"], utc=True, errors="coerce")
     if normalized["timestamp"].isna().any():
         raise CandleBuildError("minute bars contain an invalid timestamp")
     normalized["timestamp"] = pd.DatetimeIndex(normalized["timestamp"]).as_unit("ns")
@@ -121,9 +119,7 @@ def _normalize_minute_bars(bars: pd.DataFrame) -> pd.DataFrame:
 
 def _inferred_bounds(bars: pd.DataFrame) -> tuple[pd.Timestamp, pd.Timestamp]:
     first_day = bars["timestamp"].min().tz_convert(NEW_YORK).normalize()
-    day_after_last = bars["timestamp"].max().tz_convert(NEW_YORK).normalize() + pd.Timedelta(
-        days=1
-    )
+    day_after_last = bars["timestamp"].max().tz_convert(NEW_YORK).normalize() + pd.Timedelta(days=1)
     return first_day.tz_convert(UTC), day_after_last.tz_convert(UTC)
 
 
@@ -137,9 +133,7 @@ def _complete_sessions(
         start_date=start.tz_convert(NEW_YORK).date().isoformat(),
         end_date=end.tz_convert(NEW_YORK).date().isoformat(),
     )
-    return schedule.loc[
-        (schedule["market_open"] >= start) & (schedule["market_close"] <= end)
-    ]
+    return schedule.loc[(schedule["market_open"] >= start) & (schedule["market_close"] <= end)]
 
 
 def build_regular_session_candles(
@@ -185,9 +179,7 @@ def build_regular_session_candles(
         lo = timestamps.searchsorted(market_open, side="left")
         hi = timestamps.searchsorted(market_close, side="left")
         session_bars = bars.iloc[lo:hi].copy()
-        candle_starts = pd.date_range(
-            market_open, market_close, freq="5min", inclusive="left"
-        )
+        candle_starts = pd.date_range(market_open, market_close, freq="5min", inclusive="left")
 
         if session_bars.empty:
             grouped: dict[int, pd.DataFrame] = {}
@@ -227,9 +219,7 @@ def build_regular_session_candles(
                 )
                 vwap_rows = real_bars.loc[real_bars["vwap"].notna()]
                 if not vwap_rows.empty and vwap_rows["volume"].sum() > 0:
-                    vwap = float(
-                        np.average(vwap_rows["vwap"], weights=vwap_rows["volume"])
-                    )
+                    vwap = float(np.average(vwap_rows["vwap"], weights=vwap_rows["volume"]))
                 else:
                     vwap = np.nan
                 n_minutes = int(real_bars["timestamp"].nunique())

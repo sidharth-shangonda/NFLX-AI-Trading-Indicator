@@ -57,7 +57,8 @@ def _markdown(report: dict[str, Any]) -> str:
         for name, metric in methods.items():
             pnl = metric.get("simulated_pnl_bp", {})
             pnl_text = " / ".join(
-                "—" if pnl.get(str(cost), {}).get("total") is None
+                "—"
+                if pnl.get(str(cost), {}).get("total") is None
                 else f"{pnl[str(cost)]['total']:.1f}"
                 for cost in (0, 1, 2, 3)
             )

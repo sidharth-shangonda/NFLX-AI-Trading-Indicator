@@ -14,11 +14,11 @@ Describe the causal feature list, model, calibration, fixed threshold, walk-forw
 
 ## Development and holdout results
 
-Summarize `docs/results_dev.md` and `docs/results_holdout.md`; report log loss, Brier, coverage, confident-call accuracy/intervals, baselines, and the model's failure to beat neutral 50/50. Do not retune based on the holdout.
+Summarize `docs/results_dev.md` and `docs/results_holdout.md`; report log loss (0.69257 vs neutral 0.69315), Brier score (0.24971 vs neutral 0.25000), coverage (31.72%), confident-call accuracy (52.17%), Wilson lower bound (48.44%), and comparison against traditional rules and baselines. Do not retune based on the holdout.
 
 ## Live evaluation
 
-State the exact five market dates, feed state, model/artifact hash, on-time prediction count, outcomes, confidence interval, event-session split, outage duration, parity check, and no-repaint audit. Link to the generated score and live-vs-history report. If no live period completed, say so plainly.
+State the exact 1-day market date (regular NYSE trading session: 09:30–16:00 ET = 78 candles per TA instruction), feed state, model/artifact hash, on-time prediction count, outcomes, confidence interval, event-session split, outage duration, parity check, and no-repaint audit. Link to the generated score and live-vs-history report. If no live period completed, say so plainly.
 
 ## Simulated P&L
 

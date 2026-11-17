@@ -154,8 +154,7 @@ def candle_diagnostics(
             "min_minutes": min_minutes,
             "split_cutoff": split_cutoff.isoformat(),
             "n_minutes_distribution": {
-                str(n_minutes): {"candles": 0, "share": None}
-                for n_minutes in range(6)
+                str(n_minutes): {"candles": 0, "share": None} for n_minutes in range(6)
             },
             "filled_candles": 0,
             "filled_share": None,
@@ -187,9 +186,9 @@ def candle_diagnostics(
         "before_2025-11-17",
         "on_or_after_2025-11-17",
     )
-    candle_frame["close_to_close_return"] = candle_frame.groupby(
-        "session_date", sort=False
-    )["close"].pct_change(fill_method=None)
+    candle_frame["close_to_close_return"] = candle_frame.groupby("session_date", sort=False)[
+        "close"
+    ].pct_change(fill_method=None)
     total = len(candle_frame)
 
     def summarize(group: pd.DataFrame) -> dict[str, Any]:
@@ -203,8 +202,7 @@ def candle_diagnostics(
 
     def grouped_summaries(column: str) -> dict[str, Any]:
         return {
-            str(key): summarize(group)
-            for key, group in candle_frame.groupby(column, sort=True)
+            str(key): summarize(group) for key, group in candle_frame.groupby(column, sort=True)
         }
 
     distribution = {}
@@ -226,12 +224,9 @@ def candle_diagnostics(
         }
 
     nonfilled_return_observations = candle_frame.loc[
-        candle_frame["n_minutes"].gt(0)
-        & candle_frame["close_to_close_return"].notna()
+        candle_frame["n_minutes"].gt(0) & candle_frame["close_to_close_return"].notna()
     ]
-    zero_returns = int(
-        nonfilled_return_observations["close_to_close_return"].eq(0).sum()
-    )
+    zero_returns = int(nonfilled_return_observations["close_to_close_return"].eq(0).sum())
     filled_candles = int(candle_frame["is_filled"].sum()) if total else 0
     return {
         "candle_count": total,
@@ -286,9 +281,7 @@ def compare_feed_candle_closes(
         market_close = pd.Timestamp(session["market_close"]).tz_convert(UTC)
         if market_open < start_utc or market_close > end_utc:
             continue
-        candle_grid = pd.date_range(
-            market_open, market_close, freq="5min", inclusive="left"
-        )
+        candle_grid = pd.date_range(market_open, market_close, freq="5min", inclusive="left")
 
         feed_groups = []
         for feed_name, bars in (("iex", iex), ("sip", sip)):

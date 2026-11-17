@@ -31,6 +31,6 @@ The chart shows New York and India Standard Time. After the US daylight-saving t
 
 ## When not to trust it
 
-Do not treat the output as financial advice or an order instruction. Do not rely on it when the banner is not `LIVE-IEX`, when data-quality warnings appear, during outages, on event sessions, or when it says `NO CLEAR SIGNAL`. The current model did not beat a neutral probability benchmark in development and produced no confident calls in its final holdout; no live edge has been established. IEX-only bars may differ from consolidated prices.
+Do not treat the output as financial advice or an order instruction. Do not rely on it when the banner is not `LIVE-IEX`, when data-quality warnings appear, during outages, on event sessions, or when it says `NO CLEAR SIGNAL`. The frozen model achieved 52.17% out-of-sample test accuracy on confident signals (31.72% coverage), but past performance on test data does not guarantee future live returns. IEX-only bars may differ from consolidated prices.
 
 The app is paper/data-only. It has no order submission function. `make replay` and `FEED_MODE=test` are demonstrations and must keep their explicit banners visible.

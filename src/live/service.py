@@ -48,6 +48,7 @@ class LiveIndicatorService:
         symbol: str = "NFLX",
         min_minutes: int = 3,
         finalization_grace_seconds: int = 35,
+        delta: float | None = None,
         event_sessions: set[str] | None = None,
         on_event: Callable[[str, dict[str, Any]], None] | None = None,
     ) -> None:
@@ -55,15 +56,25 @@ class LiveIndicatorService:
         self.artifact = artifact or load_model_artifact(artifact_path)
         self.symbol = symbol
         self.min_minutes = min_minutes
+        self.delta = float(delta) if delta is not None else float(self.artifact.delta)
         self.finalization_grace = pd.Timedelta(seconds=finalization_grace_seconds)
         self.event_sessions = (
-            event_sessions
-            if event_sessions is not None
-            else configured_event_session_dates()
+            event_sessions if event_sessions is not None else configured_event_session_dates()
         )
         self.on_event = on_event
         if self.min_minutes < 1 or self.min_minutes > 5:
             raise LiveServiceError("min_minutes must be between one and five")
+        sidecar = Path(artifact_path).with_suffix(Path(artifact_path).suffix + ".sha256")
+        artifact_hash = sidecar.read_text().strip() if sidecar.is_file() else "unknown"
+        self.store.register_model(
+            self.artifact.model_version,
+            artifact_hash,
+            {
+                "method": self.artifact.method,
+                "snapshot_hash": self.artifact.snapshot_hash,
+                "delta": self.artifact.delta,
+            },
+        )
 
     @staticmethod
     def _utc(value: object) -> pd.Timestamp:
@@ -165,9 +176,9 @@ class LiveIndicatorService:
                     input_frame = current.iloc[[-1]].loc[:, FEATURE_COLUMNS]
                     raw_output = float(self.artifact.predict_raw(input_frame)[0])
                     calibrated = float(self.artifact.predict_calibrated(input_frame)[0])
-                    if calibrated >= 0.5 + self.artifact.delta:
+                    if calibrated >= 0.5 + self.delta:
                         direction = "UP"
-                    elif calibrated <= 0.5 - self.artifact.delta:
+                    elif calibrated <= 0.5 - self.delta:
                         direction = "DOWN"
                     else:
                         direction = "NO_CLEAR_SIGNAL"
@@ -175,8 +186,8 @@ class LiveIndicatorService:
                 except Exception as exc:
                     direction = "NO_CLEAR_SIGNAL"
                     reason = f"inference_error_{type(exc).__name__}"
-        late_cutoff = self._utc(candle["candle_end"]) + self.finalization_grace + pd.Timedelta(
-            seconds=30
+        late_cutoff = (
+            self._utc(candle["candle_end"]) + self.finalization_grace + pd.Timedelta(seconds=30)
         )
         return self.store.insert_prediction(
             symbol=self.symbol,
@@ -304,9 +315,7 @@ class LiveIndicatorService:
         for _, session in schedule.iterrows():
             market_open = pd.Timestamp(session["market_open"]).tz_convert(UTC)
             market_close = pd.Timestamp(session["market_close"]).tz_convert(UTC)
-            candle_starts = pd.date_range(
-                market_open, market_close, freq="5min", inclusive="left"
-            )
+            candle_starts = pd.date_range(market_open, market_close, freq="5min", inclusive="left")
             for candidate in candle_starts:
                 if candidate >= earliest.floor("5min") and (
                     candidate + pd.Timedelta(minutes=5) + self.finalization_grace <= clock
@@ -317,9 +326,7 @@ class LiveIndicatorService:
             try:
                 result = self.finalize_candle(candle_start, now=clock)
             except LiveServiceError as exc:
-                self.store.log_event(
-                    "live", "WARNING", "finalization_skipped", {"error": str(exc)}
-                )
+                self.store.log_event("live", "WARNING", "finalization_skipped", {"error": str(exc)})
                 continue
             if result is not None:
                 results.append(result)

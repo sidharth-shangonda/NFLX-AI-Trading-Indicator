@@ -11,3 +11,18 @@ __pycache__/
 /data/
 models/*.bin
 *.log
+
+# Presentations, posters, and academic report artifacts (kept local only)
+*.docx
+*.pdf
+*.pptx
+*.tex
+deliverables/
+generate_clean_poster.py
+make_multipanel_figure.py
+*poster*
+ppt_image*
+docs/plots/*.png
+temp_*
+uploaded_*
+research/

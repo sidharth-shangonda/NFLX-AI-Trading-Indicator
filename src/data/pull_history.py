@@ -102,8 +102,7 @@ def _append_summary_table(
         share = summary["below_min_minutes_share"]
         share_text = "n/a" if share is None else f"{share:.2%}"
         lines.append(
-            f"| {key} | {summary['candles']:,} | "
-            f"{summary['below_min_minutes']:,} | {share_text} |"
+            f"| {key} | {summary['candles']:,} | {summary['below_min_minutes']:,} | {share_text} |"
         )
     lines.append("")
 
@@ -126,9 +125,7 @@ def _append_candle_diagnostics(lines: list[str], diagnostics: dict[str, Any]) ->
         ]
     )
     for n_minutes, summary in diagnostics["n_minutes_distribution"].items():
-        lines.append(
-            f"| {n_minutes} | {summary['candles']:,} | {summary['share']:.2%} |"
-        )
+        lines.append(f"| {n_minutes} | {summary['candles']:,} | {summary['share']:.2%} |")
     lines.extend(
         [
             "",
@@ -576,18 +573,14 @@ def verify_phase1() -> int:
         return 1
 
     split = split_adjustment_summary(raw, adjusted)
-    diagnostics = candle_diagnostics(
-        frame, pd.Timestamp(start), pd.Timestamp(end), MIN_MINUTES
-    )
+    diagnostics = candle_diagnostics(frame, pd.Timestamp(start), pd.Timestamp(end), MIN_MINUTES)
 
     # SIP is an isolated five-session diagnostic. Never persist its rows or feed it
     # into the frozen IEX snapshot, training, or live path.
     sip_start = datetime(2026, 10, 26, tzinfo=UTC)
     sip_end = datetime(2026, 10, 31, tzinfo=UTC)
     try:
-        sip_frame = fetch_bars(
-            client, settings.symbol, sip_start, sip_end, "split", feed="sip"
-        )
+        sip_frame = fetch_bars(client, settings.symbol, sip_start, sip_end, "split", feed="sip")
         comparison = compare_feed_candle_closes(
             frame,
             sip_frame,
@@ -603,9 +596,7 @@ def verify_phase1() -> int:
         }
     except Exception as exc:
         response = getattr(exc, "response", None)
-        http_status = getattr(exc, "status_code", None) or getattr(
-            response, "status_code", None
-        )
+        http_status = getattr(exc, "status_code", None) or getattr(response, "status_code", None)
         api_code = getattr(exc, "error_code", None) or getattr(exc, "code", None)
         denied = http_status in (401, 403) or str(api_code).startswith("403")
         sip_diagnostic = {
@@ -615,9 +606,7 @@ def verify_phase1() -> int:
             "api_code": api_code,
         }
 
-    _write_quality_report(
-        manifest, quality, timestamp_status, split, diagnostics, sip_diagnostic
-    )
+    _write_quality_report(manifest, quality, timestamp_status, split, diagnostics, sip_diagnostic)
     _write_unverified_report(manifest, quality, split, timestamp_status, history_status)
     share = quality["candles_below_min_minutes_share"]
     print(

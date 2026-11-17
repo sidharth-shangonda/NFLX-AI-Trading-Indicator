@@ -161,8 +161,12 @@ def directional_metrics(
         "signal_wilson_lower_bound": 0.0,
         "signal_balanced_accuracy": None,
         "signal_mcc": None,
-        "confusion_matrix": {"true_down_pred_down": 0, "true_down_pred_up": 0,
-                             "true_up_pred_down": 0, "true_up_pred_up": 0},
+        "confusion_matrix": {
+            "true_down_pred_down": 0,
+            "true_down_pred_up": 0,
+            "true_up_pred_down": 0,
+            "true_up_pred_up": 0,
+        },
         "simulated_pnl_bp": {},
     }
     if not count:

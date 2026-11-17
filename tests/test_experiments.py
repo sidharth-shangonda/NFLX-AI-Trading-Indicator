@@ -43,8 +43,7 @@ def test_selection_requires_every_baseline_pooled_and_majority_fold_wins() -> No
         ]
     )
     records.loc[
-        (records["method"] == "hist_gradient_boosting")
-        & records["fold"].isin([1, 2]),
+        (records["method"] == "hist_gradient_boosting") & records["fold"].isin([1, 2]),
         "log_loss",
     ] = 0.72
     records.loc[

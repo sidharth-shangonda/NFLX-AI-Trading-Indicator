@@ -90,6 +90,7 @@ def create_app(
             symbol=symbol,
             min_minutes=settings.min_minutes,
             finalization_grace_seconds=settings.finalization_grace_seconds,
+            delta=settings.prediction_delta,
         )
         app.state.store = store
         app.state.service = service
@@ -150,9 +151,10 @@ def create_app(
                         service.ingest_bar(bar, source="rest_backfill")
                 except Exception as exc:
                     store.log_event(
-                        "backfill", "ERROR", "reconnect_backfill_failed", {
-                            "error_type": type(exc).__name__
-                        }
+                        "backfill",
+                        "ERROR",
+                        "reconnect_backfill_failed",
+                        {"error_type": type(exc).__name__},
                     )
             app.state.feed_state = state
             app.state.last_message = {"state": state, **details}
@@ -187,12 +189,16 @@ def create_app(
                     from alpaca.data.historical import StockHistoricalDataClient
 
                     client = StockHistoricalDataClient(key_id, secret_key)
-                    last_bar = store.latest_bar(settings.symbol)
-                    backfill_start = (
-                        pd.Timestamp(last_bar["timestamp"]).to_pydatetime()
-                        if last_bar
-                        else datetime.now(UTC) - timedelta(minutes=10)
-                    )
+                    existing_candles = len(store.final_candles(settings.symbol, limit=100))
+                    if existing_candles < 60:
+                        backfill_start = datetime.now(UTC) - timedelta(days=5)
+                    else:
+                        last_bar = store.latest_bar(settings.symbol)
+                        backfill_start = (
+                            pd.Timestamp(last_bar["timestamp"]).to_pydatetime()
+                            if last_bar
+                            else datetime.now(UTC) - timedelta(days=5)
+                        )
                     backfill = fetch_bars(
                         client,
                         settings.symbol,
@@ -203,6 +209,7 @@ def create_app(
                     )
                     for bar in backfill.to_dict(orient="records"):
                         service.ingest_bar(bar, source="rest_backfill")
+                    service.finalize_due(now=pd.Timestamp.now(tz=UTC))
                     if not backfill.empty:
                         app.state.last_bar_seen = str(backfill["timestamp"].max())
                     offset = fetch_clock_offset(key_id=key_id, secret_key=secret_key)
@@ -282,9 +289,7 @@ def create_app(
 
     @app.get("/api/predictions")
     async def predictions(limit: int = 250) -> dict[str, Any]:
-        rows = app.state.store.predictions(
-            app.state.service.symbol, limit=max(1, min(limit, 2000))
-        )
+        rows = app.state.store.predictions(app.state.service.symbol, limit=max(1, min(limit, 2000)))
         return {"symbol": app.state.service.symbol, "items": rows}
 
     @app.get("/api/predictions/export.csv")
@@ -320,7 +325,8 @@ def create_app(
             "artifact_hash": (
                 (PROJECT_ROOT / "models" / "model-v1.joblib.sha256").read_text().strip()
             ),
-            "delta": artifact.delta,
+            "delta": app.state.service.delta,
+            "artifact_delta": artifact.delta,
             "feature_columns": list(artifact.feature_columns),
             "training_window": artifact.production_window,
         }
@@ -366,10 +372,7 @@ def create_app(
         session_predictions = [
             item
             for item in persisted_predictions
-            if pd.Timestamp(item["candle_start"])
-            .tz_convert("America/New_York")
-            .date()
-            .isoformat()
+            if pd.Timestamp(item["candle_start"]).tz_convert("America/New_York").date().isoformat()
             in session_labels
         ]
         return {

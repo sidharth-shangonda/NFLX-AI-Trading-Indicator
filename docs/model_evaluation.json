@@ -1,8 +1,148 @@
 {
   "artifact": {
     "artifact_schema_version": 1,
-    "artifact_sha256": "8c10985bb689c3a3b6cbdb0597b117610d91659323d358a3036628f3be00c146",
+    "artifact_sha256": "87043fbb25384ac6f8e890e2e1ca6ae90074292a2ba8d79cf71a4535ad786773",
     "calibration_sessions": [
+      "2026-02-19",
+      "2026-02-20",
+      "2026-02-23",
+      "2026-02-24",
+      "2026-02-25",
+      "2026-02-26",
+      "2026-02-27",
+      "2026-03-02",
+      "2026-03-03",
+      "2026-03-04",
+      "2026-03-05",
+      "2026-03-06",
+      "2026-03-09",
+      "2026-03-10",
+      "2026-03-11",
+      "2026-03-12",
+      "2026-03-13",
+      "2026-03-16",
+      "2026-03-17",
+      "2026-03-18",
+      "2026-03-19",
+      "2026-03-20",
+      "2026-03-23",
+      "2026-03-24",
+      "2026-03-25",
+      "2026-03-26",
+      "2026-03-27",
+      "2026-03-30",
+      "2026-03-31",
+      "2026-04-01",
+      "2026-04-02",
+      "2026-04-06",
+      "2026-04-07",
+      "2026-04-08",
+      "2026-04-09",
+      "2026-04-10",
+      "2026-04-13",
+      "2026-04-14",
+      "2026-04-15",
+      "2026-04-16",
+      "2026-04-17",
+      "2026-04-20",
+      "2026-04-21",
+      "2026-04-22",
+      "2026-04-23",
+      "2026-04-24",
+      "2026-04-27",
+      "2026-04-28",
+      "2026-04-29",
+      "2026-04-30",
+      "2026-05-01",
+      "2026-05-04",
+      "2026-05-05",
+      "2026-05-06",
+      "2026-05-07",
+      "2026-05-08",
+      "2026-05-11",
+      "2026-05-12",
+      "2026-05-13",
+      "2026-05-14",
+      "2026-05-15",
+      "2026-05-18",
+      "2026-05-19",
+      "2026-05-20",
+      "2026-05-21",
+      "2026-05-22",
+      "2026-05-26",
+      "2026-05-27",
+      "2026-05-28",
+      "2026-05-29",
+      "2026-06-01",
+      "2026-06-02",
+      "2026-06-03",
+      "2026-06-04"
+    ],
+    "calibrator": "identity",
+    "delta": 0.02,
+    "fallback_reason": null,
+    "feature_columns": [
+      "return_1",
+      "return_2",
+      "return_3",
+      "return_5",
+      "return_8",
+      "return_12",
+      "return_24",
+      "ret_accel_1_2",
+      "ret_accel_1_3",
+      "body_ratio",
+      "upper_shadow_ratio",
+      "lower_shadow_ratio",
+      "clv",
+      "bar_range_pct",
+      "realized_vol_6",
+      "realized_vol_12",
+      "realized_vol_20",
+      "vol_ratio_6_20",
+      "range_mean_12",
+      "atr_14",
+      "range_to_atr",
+      "dist_ema_5",
+      "ema_5_slope",
+      "dist_ema_10",
+      "ema_10_slope",
+      "ema_fast_distance",
+      "ema_slow_distance",
+      "dist_ema_50",
+      "ema_50_slope",
+      "ema_5_20_spread",
+      "rsi_7",
+      "rsi_7_slope",
+      "rsi_14",
+      "rsi_14_slope",
+      "stoch_k",
+      "stoch_d",
+      "macd",
+      "macd_signal",
+      "macd_hist",
+      "macd_hist_slope",
+      "bollinger_position_20",
+      "bollinger_width_20",
+      "relative_volume_20",
+      "clv_vol",
+      "vol_direction",
+      "vwap_dist",
+      "time_of_day_sin",
+      "time_of_day_cos",
+      "is_morning",
+      "is_power_hour",
+      "gap_from_previous_session"
+    ],
+    "git_hash": "f92581db9ec5ef87c1f179cc92e01720a4f8ea59",
+    "method": "hist_gradient_boosting",
+    "model_version": "model-v1",
+    "production_window": "full_history",
+    "snapshot_hash": "b9895df89c65acbf77493fbc8abb4a6afaa24688b497c427c0511cd81a1e80a9",
+    "threshold_sessions": [
+      "2026-06-08",
+      "2026-06-09",
+      "2026-06-10",
       "2026-06-11",
       "2026-06-12",
       "2026-06-15",
@@ -32,36 +172,8 @@
       "2026-07-21",
       "2026-07-22",
       "2026-07-23",
-      "2026-07-24"
-    ],
-    "calibrator": "platt",
-    "delta": 0.05,
-    "fallback_reason": "No Phase 3 candidate beat neutral_50_50 on pooled development log loss; logistic-regression fallback uses a 0.05 minimum no-signal band.",
-    "feature_columns": [
-      "return_1",
-      "return_3",
-      "return_12",
-      "realized_vol_12",
-      "range_mean_12",
-      "atr_14",
-      "ema_fast_distance",
-      "ema_slow_distance",
-      "rsi_14",
-      "macd",
-      "macd_signal",
-      "bollinger_position_20",
-      "bollinger_width_20",
-      "relative_volume_20",
-      "time_of_day_sin",
-      "time_of_day_cos",
-      "gap_from_previous_session"
-    ],
-    "git_hash": "b7808d2b97aa2af319c24a6eb759fb8ab61fb19b",
-    "method": "logistic_regression",
-    "model_version": "model-v1",
-    "production_window": "post_split",
-    "snapshot_hash": "b9895df89c65acbf77493fbc8abb4a6afaa24688b497c427c0511cd81a1e80a9",
-    "threshold_sessions": [
+      "2026-07-24",
+      "2026-07-27",
       "2026-07-28",
       "2026-07-29",
       "2026-07-30",
@@ -102,7 +214,7 @@
       "2026-09-18",
       "2026-09-21"
     ],
-    "trained_through_session": "2026-06-09"
+    "trained_through_session": "2026-09-21"
   },
   "baseline_metrics": {
     "always_down": {
@@ -114,7 +226,7 @@
         "true_up_pred_up": 0
       },
       "coverage": 1.0,
-      "delta": 0.05,
+      "delta": 0.02,
       "log_loss": 6.650501463075475,
       "samples": 2175,
       "signal_accuracy": 0.5186206896551724,
@@ -150,7 +262,7 @@
         "true_up_pred_up": 1047
       },
       "coverage": 1.0,
-      "delta": 0.05,
+      "delta": 0.02,
       "log_loss": 7.1650100948743844,
       "samples": 2175,
       "signal_accuracy": 0.48137931034482756,
@@ -178,38 +290,38 @@
       }
     },
     "majority_class": {
-      "brier": 0.48137931034482756,
+      "brier": 0.5186206896551724,
       "confusion_matrix": {
-        "true_down_pred_down": 1128,
-        "true_down_pred_up": 0,
-        "true_up_pred_down": 1047,
-        "true_up_pred_up": 0
+        "true_down_pred_down": 0,
+        "true_down_pred_up": 1128,
+        "true_up_pred_down": 0,
+        "true_up_pred_up": 1047
       },
       "coverage": 1.0,
-      "delta": 0.05,
-      "log_loss": 6.650501463075475,
+      "delta": 0.02,
+      "log_loss": 7.1650100948743844,
       "samples": 2175,
-      "signal_accuracy": 0.5186206896551724,
+      "signal_accuracy": 0.48137931034482756,
       "signal_balanced_accuracy": 0.5,
       "signal_count": 2175,
       "signal_mcc": 0.0,
-      "signal_wilson_lower_bound": 0.4976075245326274,
+      "signal_wilson_lower_bound": 0.46043180694030683,
       "simulated_pnl_bp": {
         "0.0": {
-          "mean_per_signal": 0.5068040173738696,
-          "total": 1102.2987377881664
+          "mean_per_signal": -0.5068040173738696,
+          "total": -1102.2987377881664
         },
         "1.0": {
-          "mean_per_signal": -1.4931959826261305,
-          "total": -3247.7012622118336
+          "mean_per_signal": -2.50680401737387,
+          "total": -5452.298737788167
         },
         "2.0": {
-          "mean_per_signal": -3.4931959826261307,
-          "total": -7597.701262211835
+          "mean_per_signal": -4.50680401737387,
+          "total": -9802.298737788167
         },
         "3.0": {
-          "mean_per_signal": -5.49319598262613,
-          "total": -11947.701262211833
+          "mean_per_signal": -6.50680401737387,
+          "total": -14152.298737788167
         }
       }
     },
@@ -222,7 +334,7 @@
         "true_up_pred_up": 0
       },
       "coverage": 0.0,
-      "delta": 0.05,
+      "delta": 0.02,
       "log_loss": 0.6931471805599453,
       "samples": 2175,
       "signal_accuracy": null,
@@ -233,74 +345,74 @@
       "simulated_pnl_bp": {}
     },
     "previous_candle_direction": {
-      "brier": 0.511264367816092,
+      "brier": 0.5071264367816092,
       "confusion_matrix": {
-        "true_down_pred_down": 584,
-        "true_down_pred_up": 544,
-        "true_up_pred_down": 568,
-        "true_up_pred_up": 479
+        "true_down_pred_down": 561,
+        "true_down_pred_up": 567,
+        "true_up_pred_down": 536,
+        "true_up_pred_up": 511
       },
       "coverage": 1.0,
-      "delta": 0.05,
-      "log_loss": 7.063378760202832,
+      "delta": 0.02,
+      "log_loss": 7.0062111344454365,
       "samples": 2175,
-      "signal_accuracy": 0.48873563218390803,
-      "signal_balanced_accuracy": 0.4876140543396533,
+      "signal_accuracy": 0.4928735632183908,
+      "signal_balanced_accuracy": 0.49270077628076164,
       "signal_count": 2175,
-      "signal_mcc": -0.02479836227627367,
-      "signal_wilson_lower_bound": 0.46776593928156734,
+      "signal_mcc": -0.0145888771426366,
+      "signal_wilson_lower_bound": 0.4718933842230293,
       "simulated_pnl_bp": {
         "0.0": {
-          "mean_per_signal": -0.5463003672530299,
-          "total": -1188.20329877534
+          "mean_per_signal": -0.3669253103682998,
+          "total": -798.0625500510521
         },
         "1.0": {
-          "mean_per_signal": -2.5463003672530298,
-          "total": -5538.20329877534
+          "mean_per_signal": -2.3669253103683,
+          "total": -5148.062550051052
         },
         "2.0": {
-          "mean_per_signal": -4.546300367253029,
-          "total": -9888.20329877534
+          "mean_per_signal": -4.3669253103683,
+          "total": -9498.062550051052
         },
         "3.0": {
-          "mean_per_signal": -6.546300367253029,
-          "total": -14238.20329877534
+          "mean_per_signal": -6.366925310368299,
+          "total": -13848.06255005105
         }
       }
     },
     "rsi_rule": {
-      "brier": 0.314367816091954,
+      "brier": 0.31413793103448273,
       "confusion_matrix": {
-        "true_down_pred_down": 109,
+        "true_down_pred_down": 108,
         "true_down_pred_up": 172,
-        "true_up_pred_down": 108,
+        "true_up_pred_down": 107,
         "true_up_pred_up": 171
       },
-      "coverage": 0.2574712643678161,
-      "delta": 0.05,
-      "log_loss": 2.2932303139445986,
+      "coverage": 0.25655172413793104,
+      "delta": 0.02,
+      "log_loss": 2.2875157313253593,
       "samples": 2175,
       "signal_accuracy": 0.5,
-      "signal_balanced_accuracy": 0.5004017908391689,
-      "signal_count": 560,
-      "signal_mcc": 0.0008247234833251985,
-      "signal_wilson_lower_bound": 0.4587287599249225,
+      "signal_balanced_accuracy": 0.5004110996916752,
+      "signal_count": 558,
+      "signal_mcc": 0.000844719014844981,
+      "signal_wilson_lower_bound": 0.4586553681063661,
       "simulated_pnl_bp": {
         "0.0": {
-          "mean_per_signal": -0.028480999883851763,
-          "total": -15.949359934956988
+          "mean_per_signal": -0.023479694993512677,
+          "total": -13.101669806380073
         },
         "1.0": {
-          "mean_per_signal": -2.0284809998838518,
-          "total": -1135.9493599349569
+          "mean_per_signal": -2.0234796949935125,
+          "total": -1129.10166980638
         },
         "2.0": {
-          "mean_per_signal": -4.028480999883852,
-          "total": -2255.949359934957
+          "mean_per_signal": -4.0234796949935125,
+          "total": -2245.10166980638
         },
         "3.0": {
-          "mean_per_signal": -6.028480999883852,
-          "total": -3375.949359934957
+          "mean_per_signal": -6.0234796949935125,
+          "total": -3361.10166980638
         }
       }
     }
@@ -309,140 +421,259 @@
     "time_bucket": {
       "close_15:30-16:00": {
         "confusion_matrix": {
-          "true_down_pred_down": 0,
-          "true_down_pred_up": 0,
-          "true_up_pred_down": 0,
-          "true_up_pred_up": 0
+          "true_down_pred_down": 19,
+          "true_down_pred_up": 3,
+          "true_up_pred_down": 20,
+          "true_up_pred_up": 5
         },
-        "coverage": 0.0,
-        "delta": 0.05,
+        "coverage": 0.3333333333333333,
+        "delta": 0.02,
         "samples": 141,
-        "signal_accuracy": null,
-        "signal_balanced_accuracy": null,
-        "signal_count": 0,
-        "signal_mcc": null,
-        "signal_wilson_lower_bound": 0.0,
-        "simulated_pnl_bp": {}
+        "signal_accuracy": 0.5106382978723404,
+        "signal_balanced_accuracy": 0.5318181818181819,
+        "signal_count": 47,
+        "signal_mcc": 0.08449079617742183,
+        "signal_wilson_lower_bound": 0.37242217589372884,
+        "simulated_pnl_bp": {
+          "0.0": {
+            "mean_per_signal": 1.4371072820647641,
+            "total": 67.54404225704391
+          },
+          "1.0": {
+            "mean_per_signal": -0.5628927179352357,
+            "total": -26.455957742956073
+          },
+          "2.0": {
+            "mean_per_signal": -2.562892717935236,
+            "total": -120.45595774295609
+          },
+          "3.0": {
+            "mean_per_signal": -4.562892717935235,
+            "total": -214.45595774295606
+          }
+        }
       },
       "midday": {
         "confusion_matrix": {
-          "true_down_pred_down": 0,
-          "true_down_pred_up": 0,
-          "true_up_pred_down": 0,
-          "true_up_pred_up": 0
+          "true_down_pred_down": 156,
+          "true_down_pred_up": 145,
+          "true_up_pred_down": 126,
+          "true_up_pred_up": 137
         },
-        "coverage": 0.0,
-        "delta": 0.05,
+        "coverage": 0.3030628694250403,
+        "delta": 0.02,
         "samples": 1861,
-        "signal_accuracy": null,
-        "signal_balanced_accuracy": null,
-        "signal_count": 0,
-        "signal_mcc": null,
-        "signal_wilson_lower_bound": 0.0,
-        "simulated_pnl_bp": {}
+        "signal_accuracy": 0.5195035460992907,
+        "signal_balanced_accuracy": 0.5195924863888433,
+        "signal_count": 564,
+        "signal_mcc": 0.03909593132204587,
+        "signal_wilson_lower_bound": 0.4782770655230925,
+        "simulated_pnl_bp": {
+          "0.0": {
+            "mean_per_signal": 0.6865845145138771,
+            "total": 387.23366618582673
+          },
+          "1.0": {
+            "mean_per_signal": -1.3134154854861229,
+            "total": -740.7663338141733
+          },
+          "2.0": {
+            "mean_per_signal": -3.313415485486123,
+            "total": -1868.7663338141733
+          },
+          "3.0": {
+            "mean_per_signal": -5.313415485486123,
+            "total": -2996.7663338141733
+          }
+        }
       },
       "open_09:30-10:00": {
         "confusion_matrix": {
-          "true_down_pred_down": 0,
-          "true_down_pred_up": 0,
-          "true_up_pred_down": 0,
-          "true_up_pred_up": 0
+          "true_down_pred_down": 21,
+          "true_down_pred_up": 17,
+          "true_up_pred_down": 19,
+          "true_up_pred_up": 22
         },
-        "coverage": 0.0,
-        "delta": 0.05,
+        "coverage": 0.45664739884393063,
+        "delta": 0.02,
         "samples": 173,
-        "signal_accuracy": null,
-        "signal_balanced_accuracy": null,
-        "signal_count": 0,
-        "signal_mcc": null,
-        "signal_wilson_lower_bound": 0.0,
-        "simulated_pnl_bp": {}
+        "signal_accuracy": 0.5443037974683544,
+        "signal_balanced_accuracy": 0.5446084724005136,
+        "signal_count": 79,
+        "signal_mcc": 0.08915973610979581,
+        "signal_wilson_lower_bound": 0.43498137697497413,
+        "simulated_pnl_bp": {
+          "0.0": {
+            "mean_per_signal": 7.281016900236477,
+            "total": 575.2003351186817
+          },
+          "1.0": {
+            "mean_per_signal": 5.281016900236477,
+            "total": 417.20033511868166
+          },
+          "2.0": {
+            "mean_per_signal": 3.2810169002364784,
+            "total": 259.2003351186818
+          },
+          "3.0": {
+            "mean_per_signal": 1.281016900236479,
+            "total": 101.20033511868185
+          }
+        }
       }
     },
     "volatility_tercile": {
       "high": {
         "confusion_matrix": {
-          "true_down_pred_down": 0,
-          "true_down_pred_up": 0,
-          "true_up_pred_down": 0,
-          "true_up_pred_up": 0
+          "true_down_pred_down": 64,
+          "true_down_pred_up": 69,
+          "true_up_pred_down": 51,
+          "true_up_pred_up": 65
         },
-        "coverage": 0.0,
-        "delta": 0.05,
+        "coverage": 0.34344827586206894,
+        "delta": 0.02,
         "samples": 725,
-        "signal_accuracy": null,
-        "signal_balanced_accuracy": null,
-        "signal_count": 0,
-        "signal_mcc": null,
-        "signal_wilson_lower_bound": 0.0,
-        "simulated_pnl_bp": {}
+        "signal_accuracy": 0.5180722891566265,
+        "signal_balanced_accuracy": 0.5207739175525019,
+        "signal_count": 249,
+        "signal_mcc": 0.041572093468739586,
+        "signal_wilson_lower_bound": 0.45620599537229994,
+        "simulated_pnl_bp": {
+          "0.0": {
+            "mean_per_signal": 2.7766093292916567,
+            "total": 691.3757229936225
+          },
+          "1.0": {
+            "mean_per_signal": 0.7766093292916562,
+            "total": 193.3757229936224
+          },
+          "2.0": {
+            "mean_per_signal": -1.2233906707083437,
+            "total": -304.6242770063776
+          },
+          "3.0": {
+            "mean_per_signal": -3.223390670708344,
+            "total": -802.6242770063777
+          }
+        }
       },
       "low": {
         "confusion_matrix": {
-          "true_down_pred_down": 0,
-          "true_down_pred_up": 0,
-          "true_up_pred_down": 0,
-          "true_up_pred_up": 0
+          "true_down_pred_down": 67,
+          "true_down_pred_up": 43,
+          "true_up_pred_down": 59,
+          "true_up_pred_up": 40
         },
-        "coverage": 0.0,
-        "delta": 0.05,
+        "coverage": 0.2882758620689655,
+        "delta": 0.02,
         "samples": 725,
-        "signal_accuracy": null,
-        "signal_balanced_accuracy": null,
-        "signal_count": 0,
-        "signal_mcc": null,
-        "signal_wilson_lower_bound": 0.0,
-        "simulated_pnl_bp": {}
+        "signal_accuracy": 0.5119617224880383,
+        "signal_balanced_accuracy": 0.5065656565656566,
+        "signal_count": 209,
+        "signal_mcc": 0.013399783416848672,
+        "signal_wilson_lower_bound": 0.44459122717470767,
+        "simulated_pnl_bp": {
+          "0.0": {
+            "mean_per_signal": 0.6553133690542632,
+            "total": 136.960494132341
+          },
+          "1.0": {
+            "mean_per_signal": -1.3446866309457368,
+            "total": -281.039505867659
+          },
+          "2.0": {
+            "mean_per_signal": -3.3446866309457373,
+            "total": -699.039505867659
+          },
+          "3.0": {
+            "mean_per_signal": -5.344686630945737,
+            "total": -1117.039505867659
+          }
+        }
       },
       "middle": {
         "confusion_matrix": {
-          "true_down_pred_down": 0,
-          "true_down_pred_up": 0,
-          "true_up_pred_down": 0,
-          "true_up_pred_up": 0
+          "true_down_pred_down": 65,
+          "true_down_pred_up": 53,
+          "true_up_pred_down": 55,
+          "true_up_pred_up": 59
         },
-        "coverage": 0.0,
-        "delta": 0.05,
+        "coverage": 0.32,
+        "delta": 0.02,
         "samples": 725,
-        "signal_accuracy": null,
-        "signal_balanced_accuracy": null,
-        "signal_count": 0,
-        "signal_mcc": null,
-        "signal_wilson_lower_bound": 0.0,
-        "simulated_pnl_bp": {}
+        "signal_accuracy": 0.5344827586206896,
+        "signal_balanced_accuracy": 0.5341956586381207,
+        "signal_count": 232,
+        "signal_mcc": 0.06842184230220956,
+        "signal_wilson_lower_bound": 0.4702565473964307,
+        "simulated_pnl_bp": {
+          "0.0": {
+            "mean_per_signal": 0.8691458036016769,
+            "total": 201.64182643558905
+          },
+          "1.0": {
+            "mean_per_signal": -1.130854196398323,
+            "total": -262.35817356441095
+          },
+          "2.0": {
+            "mean_per_signal": -3.1308541963983227,
+            "total": -726.3581735644109
+          },
+          "3.0": {
+            "mean_per_signal": -5.130854196398324,
+            "total": -1190.3581735644111
+          }
+        }
       }
     }
   },
   "calibration_metrics": {
-    "brier": 0.2498783203336569,
-    "log_loss": 0.6929038841551873
+    "brier": 0.2508419373689128,
+    "log_loss": 0.6948503690672952
   },
-  "generated_at_utc": "2026-11-07T13:43:43.182072+00:00",
+  "generated_at_utc": "2026-11-09T20:51:55.569584+00:00",
   "holdout_metrics": {
-    "brier": 0.25005068659384505,
+    "brier": 0.24970873868918717,
     "confusion_matrix": {
-      "true_down_pred_down": 0,
-      "true_down_pred_up": 0,
-      "true_up_pred_down": 0,
-      "true_up_pred_up": 0
+      "true_down_pred_down": 196,
+      "true_down_pred_up": 165,
+      "true_up_pred_down": 165,
+      "true_up_pred_up": 164
     },
-    "coverage": 0.0,
-    "delta": 0.05,
-    "log_loss": 0.6932485765841081,
+    "coverage": 0.31724137931034485,
+    "delta": 0.02,
+    "log_loss": 0.6925651594242732,
     "samples": 2175,
-    "signal_accuracy": null,
-    "signal_balanced_accuracy": null,
-    "signal_count": 0,
-    "signal_mcc": null,
-    "signal_wilson_lower_bound": 0.0,
-    "simulated_pnl_bp": {}
+    "signal_accuracy": 0.5217391304347826,
+    "signal_balanced_accuracy": 0.5207082656248685,
+    "signal_count": 690,
+    "signal_mcc": 0.04141653124973688,
+    "signal_wilson_lower_bound": 0.48444921654199063,
+    "simulated_pnl_bp": {
+      "0.0": {
+        "mean_per_signal": 1.4927218022631197,
+        "total": 1029.9780435615526
+      },
+      "1.0": {
+        "mean_per_signal": -0.5072781977368805,
+        "total": -350.0219564384476
+      },
+      "2.0": {
+        "mean_per_signal": -2.5072781977368805,
+        "total": -1730.0219564384474
+      },
+      "3.0": {
+        "mean_per_signal": -4.507278197736881,
+        "total": -3110.021956438448
+      }
+    }
   },
   "holdout_sessions": [
     "2026-09-22",
     "2026-11-02"
   ],
   "threshold_metrics": {
-    "brier": 0.2500695195504746,
-    "log_loss": 0.6932857342783013
+    "brier": 0.2505296816284045,
+    "log_loss": 0.6942272914056499
   }
 }
